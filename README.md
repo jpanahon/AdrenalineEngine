@@ -18,7 +18,7 @@ NOTE: Currently it is in pre-beta meaning it is not suitable for public use yet 
 
 # Libraries Used
 
-<li> Renderering: [Vulkan](https://www.vulkan.org/) </li>
+<li> Rendering: [Vulkan](https://www.vulkan.org/) </li>
 <li> Window Creation: [GLFW](https://github.com/glfw/glfw) </li> 
 <li> Model Manipulation: [GLM](https://github.com/g-truc/glm) </li>
 <li> Model Loading: [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) (For now) </li>
