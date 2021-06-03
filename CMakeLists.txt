@@ -6,7 +6,7 @@ set(RENDERER "engine/renderer")
 set(CMAKE_BUILD_TYPE Debug)
 
 file(GLOB SOURCE_FILES "main.cpp" "engine/renderer/*.cpp" "engine/*.cpp" "lib/imgui/*.cpp")
-file(GLOB HEADER_FILES "engine/renderer/*.h" "engine/*.h" "lib/imgui/*.h")
+file(GLOB HEADER_FILES "engine/renderer/*.h" "engine/*.h" "lib/imgui/*.h" "lib/stb/*.h", "lib/vma/*.h")
 
 include_directories(${CMAKE_CURRENT_DIRECTORY} "engine/renderer" "engine/" "lib/imgui")
 
