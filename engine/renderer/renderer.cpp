@@ -85,8 +85,8 @@ void Adren::Renderer::mainLoop() {
     while (!glfwWindowShouldClose(variables.window)) {
         glfwPollEvents();
         
-        // display.newImguiFrame();
-        // display.startGUI();
+        display.newImguiFrame();
+        display.startGUI();
         processing.drawFrame();
         display.processInput();
     }
@@ -141,7 +141,7 @@ void Adren::Renderer::cleanup() {
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    // display.initImGui();
+    display.initImGui();
     mainLoop();
     cleanup();
 }

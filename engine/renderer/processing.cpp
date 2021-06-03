@@ -139,7 +139,7 @@ void Adren::Processing::createFramebuffers() {
         framebufferInfo.layers = 1;
 
         vibeCheck(vkCreateFramebuffer(renderer.device, &framebufferInfo, nullptr, 
-            &renderer.swapChainFramebuffers[renderer.currentFrame]));
+            &renderer.swapChainFramebuffers[i]));
     }
 }
 
@@ -687,9 +687,13 @@ void Adren::Processing::createSyncObjects() {
 }
 
 void Adren::Processing::drawFrame() {
-    // ImGui::Render();
+    ImGui::Render();
+    renderer.currentFrame = (renderer.currentFrame + 1) % renderer.MAX_FRAMES_IN_FLIGHT;
     vkWaitForFences(renderer.device, 1, &renderer.inFlightFences[renderer.currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(renderer.device, 1, &renderer.inFlightFences[renderer.currentFrame]);
+
     
+    auto commandBuffer = renderer.commandBuffers[renderer.currentFrame];
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(renderer.device, renderer.swapChain, UINT64_MAX, renderer.imageAvailableSemaphores[renderer.currentFrame], VK_NULL_HANDLE, &imageIndex);
     
@@ -700,7 +704,6 @@ void Adren::Processing::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    auto commandBuffer = renderer.commandBuffers[imageIndex];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -747,18 +750,13 @@ void Adren::Processing::drawFrame() {
         vertexOffset += renderer.vertexCounts[j];
     }
     
-    // ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     vkCmdEndRenderPass(commandBuffer);
 
     vibeCheck(vkEndCommandBuffer(commandBuffer)); 
 
     updateUniformBuffer(imageIndex);
     updateDynamicUniformBuffer(imageIndex);
-    
-    if (renderer.imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(renderer.device, 1, &renderer.imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
-    }
-    renderer.imagesInFlight[imageIndex] = renderer.inFlightFences[renderer.currentFrame];
     
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -770,15 +768,14 @@ void Adren::Processing::drawFrame() {
     submitInfo.pWaitDstStageMask = waitStages;
     
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &renderer.commandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &commandBuffer;
     
     VkSemaphore signalSemaphores[] = {renderer.renderFinishedSemaphores[renderer.currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
     
-    vkResetFences(renderer.device, 1, &renderer.inFlightFences[imageIndex]);
     
-    vibeCheck(vkQueueSubmit(renderer.graphicsQueue, 1, &submitInfo, renderer.inFlightFences[imageIndex]));
+    vibeCheck(vkQueueSubmit(renderer.graphicsQueue, 1, &submitInfo, renderer.inFlightFences[renderer.currentFrame]));
     
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -801,5 +798,4 @@ void Adren::Processing::drawFrame() {
         throw std::runtime_error("failed to present swap chain image!");
     }
     
-    renderer.currentFrame = (renderer.currentFrame + 1) % renderer.MAX_FRAMES_IN_FLIGHT;
 }
