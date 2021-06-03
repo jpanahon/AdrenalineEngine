@@ -127,7 +127,7 @@ void Adren::Renderer::cleanup() {
         debugging.DestroyDebugUtilsMessengerEXT(variables.instance, variables.debugMessenger, nullptr);
     }
     
-    // display.shutDownImGui();
+    display.shutDownImGui();
     vkDestroySurfaceKHR(variables.instance, variables.surface, nullptr);
     vkDestroyInstance(variables.instance, nullptr);
     
