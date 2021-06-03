@@ -1,0 +1,7 @@
+.DS_Store
+.gitattributes
+Adrenaline-Engine
+CMakeCache.txt
+Makefile
+cmake_install.cmake 
+imgui.ini
