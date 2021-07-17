@@ -13,3 +13,5 @@ imgui.ini
 /lib/glfw-3.3.4/deps
 /lib/glfw-3.3.4/CMakeFiles
 /lib/glfw-3.3.4/CMake
+/lib/glfw-3.3.4/cmake_uninstall.cmake
+/lib/glfw-3.3.4/cmake_uninstall.cmake.in
