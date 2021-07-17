@@ -7,5 +7,9 @@ cmake_install.cmake
 imgui.ini
 /CMakeFiles
 /lib/glfw-3.3.4/src/CMakeFiles
-/lib/glfw-3.3.4/examples/CMakeFiles
-/lib/glfw-3.3.4/tests/CMakeFiles
+/lib/glfw-3.3.4/examples
+/lib/glfw-3.3.4/tests
+/lib/glfw-3.3.4/docs
+/lib/glfw-3.3.4/deps
+/lib/glfw-3.3.4/CMakeFiles
+/lib/glw-3.3.4/CMake
