@@ -6,4 +6,4 @@ Makefile
 cmake_install.cmake 
 imgui.ini
 /CMakeFiles
-/lib/glfw-3.3.4/CMakeFiles
+/lib/glfw-3.3.4/src/CMakeFiles
