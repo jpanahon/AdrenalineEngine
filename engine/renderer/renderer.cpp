@@ -3,20 +3,33 @@
     Adrenaline Engine
 
     This initializes the Vulkan API.
-    Copyright © 2021 Stole Your Shoes. All rights reserved.
 */
 
 #include "renderer.h"
+#include "info.h"
 
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
+Adren::Renderer::~Renderer() {
+    for (auto& tex : textures) {
+        vkDestroyImageView(devices.device, tex.textureImageView, nullptr);
+        vkDestroyImage(devices.device, tex.texture, nullptr);
+        vkFreeMemory(devices.device, tex.textureImageMemory, nullptr);
+        vkDestroySampler(devices.device, tex.sampler, nullptr);
+    }
+
+    vkDestroySurfaceKHR(instance, display.surface, nullptr);
+    vkDestroyInstance(instance, nullptr);
+    
+    glfwDestroyWindow(window);
+    
+    glfwTerminate();
+}
 
 void Adren::Renderer::createInstance() {
-    if (variables.enableValidationLayers && !devices.checkValidationLayerSupport()) {
+    if (debug && !devices.checkValidationLayerSupport()) {
         throw std::runtime_error("Validation layers requested, but not available!");
     }
     
-    VkApplicationInfo appInfo = Adren::Info::appInfo(appName);
+    VkApplicationInfo appInfo = ::appInfo();
     
     VkInstanceCreateInfo instanceInfo{};
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO; 
@@ -27,9 +40,9 @@ void Adren::Renderer::createInstance() {
     instanceInfo.ppEnabledExtensionNames = extensions.data();
     
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (variables.enableValidationLayers) {
-        instanceInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        instanceInfo.ppEnabledLayerNames = validationLayers.data();
+    if (debug) {
+        instanceInfo.enabledLayerCount = static_cast<uint32_t>(devices.validationLayers.size());
+        instanceInfo.ppEnabledLayerNames = devices.validationLayers.data();
 
         debugging.populateDebugMessengerCreateInfo(debugCreateInfo);
         instanceInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
@@ -39,7 +52,7 @@ void Adren::Renderer::createInstance() {
         instanceInfo.pNext = nullptr;
     }
     
-    if (vkCreateInstance(&instanceInfo, nullptr, &variables.instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&instanceInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 }
@@ -50,98 +63,63 @@ void Adren::Renderer::initVulkan() {
     display.createSurface();
     devices.pickPhysicalDevice();
     devices.createLogicalDevice();
-    processing.createSwapChain();
-    processing.createImageViews();
-    processing.createRenderPass();
-    pipeline.createDescriptorSetLayout(models.size());
-    pipeline.createGraphicsPipeline();
+    swapchain.createSwapChain();
+    swapchain.createImageViews();
+    swapchain.createRenderPass();
+    swapchain.createDescriptorSetLayout(models.size());
+    swapchain.createGraphicsPipeline();
     processing.createCommandPool();
-    processing.createDepthResources();
-    processing.createFramebuffers(); 
+    swapchain.createDepthResources();
+    swapchain.createFramebuffers(); 
 
     for (auto& model : models) {
-        variables.textures.push_back(processing.createTextureImage(model.texturePath));
+        textures.push_back(processing.createTextureImage(model.texturePath));
     }
-    
-    processing.createTextureSampler();
     processing.displayModels();
     processing.createVertexBuffer();
     processing.createIndexBuffer();
-    processing.createUniformBuffers();
-    processing.createDynamicUniformBuffers();
-    pipeline.createDescriptorPool();
-    pipeline.createDescriptorSets();
+    swapchain.createUniformBuffers();
+    swapchain.createDynamicUniformBuffers(textures.size());
+    swapchain.createDescriptorPool();
+    swapchain.createDescriptorSets(textures);
     processing.createCommandBuffers();
     processing.createSyncObjects();
-
-    VmaAllocatorCreateInfo allocatorInfo{};
-    allocatorInfo.physicalDevice = variables.physicalDevice;
-    allocatorInfo.device = variables.device;
-    allocatorInfo.instance = variables.instance;
-    vmaCreateAllocator(&allocatorInfo, &variables.allocator);
 }
 
 void Adren::Renderer::mainLoop() {
-    while (!glfwWindowShouldClose(variables.window)) {
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         
-        display.newImguiFrame();
-        display.startGUI();
-        processing.drawFrame();
-        display.processInput();
+        gui.newImguiFrame();
+        gui.startGUI();
+        processing.drawFrame(textures);
+        processInput();
     }
 
-
-    vkDeviceWaitIdle(variables.device);
-}
-
-void Adren::Renderer::cleanup() {
-    processing.cleanupSwapChain();
-    
-    vkDestroySampler(variables.device, variables.textureSampler, nullptr);
-
-    for (auto& tex : variables.textures) {
-        vkDestroyImageView(variables.device, tex.textureImageView, nullptr);
-        vkDestroyImage(variables.device, tex.texture, nullptr);
-        vkFreeMemory(variables.device, tex.textureImageMemory, nullptr);
-    }
-    
-    vkDestroyDescriptorSetLayout(variables.device, variables.descriptorSetLayout, nullptr);
-    vkDestroyBuffer(variables.device, variables.indexBuffer, nullptr);
-    vkFreeMemory(variables.device, variables.indexBufferMemory, nullptr);
-    
-    vkDestroyBuffer(variables.device, variables.vertexBuffer, nullptr);
-    vkFreeMemory(variables.device, variables.vertexBufferMemory, nullptr);
-    
-    for (size_t i = 0; i < variables.MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(variables.device, variables.renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(variables.device, variables.imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(variables.device, variables.inFlightFences[i], nullptr);
-    }
-    
-    vkDestroyCommandPool(variables.device, variables.commandPool, nullptr);
-    
-    vkDestroyDevice(variables.device, nullptr);
-    
-    if (variables.enableValidationLayers) {
-        debugging.DestroyDebugUtilsMessengerEXT(variables.instance, variables.debugMessenger, nullptr);
-    }
-    
-    display.shutDownImGui();
-    vkDestroySurfaceKHR(variables.instance, variables.surface, nullptr);
-    vkDestroyInstance(variables.instance, nullptr);
-    
-    glfwDestroyWindow(variables.window);
-    
-    glfwTerminate();
-
-    vmaDestroyAllocator(variables.allocator);
+    vkDeviceWaitIdle(devices.device);
 }
 
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    display.initImGui();
+    gui.initImGui();
     mainLoop();
-    cleanup();
+}
+
+void Adren::Renderer::processInput() {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        display.cameraPos += 0.5f * display.cameraFront;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        display.cameraPos -= 0.5f * display.cameraFront;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        display.cameraPos -= glm::normalize(glm::cross(display.cameraFront, display.cameraUp)) * 0.5f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        display.cameraPos += glm::normalize(glm::cross(display.cameraFront, display.cameraUp)) * 0.5f;
+    }
 }

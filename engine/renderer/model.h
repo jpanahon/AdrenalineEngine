@@ -1,37 +1,24 @@
-/*  
+/*
 	model.h
 	Adrenaline Engine
-	
-	Insert Description
-	Copyright © 2021 Stole Your Shoes. All rights reserved.
 
-*/
+	This file holds the class that handles 3D models
+ */
 
-#pragma once
-#include "global.h"
-
-struct Vertex;
+#pragma once 
+#include "types.h"
 
 namespace Adren {
 class Model {
 public:
-	Model() = default;
-	Model(std::string modelPath, std::string texturePath, bool player = false, glm::vec3 position = glm::vec3(0.0f));
+    Model() = default;
+    Model(std::string modelPath, std::string texturePath, bool player = false, glm::vec3 position = glm::vec3(0.0f));
+        
+    std::string texturePath;
+    bool player; 
+    glm::vec3 position;
 
-	std::string texturePath;
-	bool player; 
-	glm::vec3 position;
-
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 };
-}
-
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-            (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
 }

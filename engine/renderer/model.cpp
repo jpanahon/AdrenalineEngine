@@ -1,15 +1,14 @@
-/*
-    model.cpp
-    Adrenaline Engine
+/* 
+	model.cpp
+	Adrenaline Engine
 
-    This in charge of loading models.
-    Copyright © 2021 Stole Your Shoes. All rights reserved.
+	This defines the models.
 */
 
 #include "model.h"
-#include <unordered_map>
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include <tiny_obj_loader.h>
+#include "types.h"
 
 Adren::Model::Model(std::string modelPath, std::string texturePath, bool player, glm::vec3 position) {
     tinyobj::attrib_t attrib;
@@ -52,3 +51,4 @@ Adren::Model::Model(std::string modelPath, std::string texturePath, bool player,
     this->player = player;
     this->position = position;
 }
+

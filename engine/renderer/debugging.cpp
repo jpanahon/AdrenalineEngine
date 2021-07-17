@@ -3,10 +3,11 @@
     Adrenaline Engine
  
     This allows Vulkan to spit out errors.
-    Copyright © 2021 Stole Your Shoes. All rights reserved.
+    
 */
 
 #include "debugging.h"
+#include "tools.h"
 
 VkResult Adren::Debugger::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -33,12 +34,12 @@ void Adren::Debugger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCrea
 }
 
 void Adren::Debugger::setupDebugMessenger() {
-    if (!renderer.enableValidationLayers) return;
+    if (!debug) return;
     
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
     
-    vibeCheck(CreateDebugUtilsMessengerEXT(renderer.instance, &createInfo, nullptr, &renderer.debugMessenger));
+    vibeCheck(CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger));
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Debugger::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {

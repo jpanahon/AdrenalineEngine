@@ -3,19 +3,19 @@
 	Adrenaline Engine
 	
 	Declarations for debugging functions.
-	Copyright © 2021 Stole Your Shoes. All rights reserved.
-
 */
 
 #pragma once
-#include "global.h"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace Adren {
 class Debugger {
 public:
     
-    Debugger(RendererVariables& renderer) : renderer(renderer) {
-    }
+    Debugger(bool& debug, VkInstance& instance) : debug(debug), instance(instance) {}
+
+    ~Debugger() { if (debug) { DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); } }
     
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger); 
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator); 
@@ -26,6 +26,8 @@ public:
     
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 private:
-    RendererVariables& renderer;
+    bool& debug;
+    VkDebugUtilsMessengerEXT debugMessenger;
+    VkInstance& instance;
 }; 
 }

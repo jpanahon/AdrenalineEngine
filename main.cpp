@@ -3,15 +3,14 @@
 	Adrenaline Engine
 
     This starts the entire program.
-	Copyright © 2021 Stole Your Shoes. All rights reserved.
 */
 
 #include "engine/adrenaline.h"
 
 int main() {
-    Adren::Config config{}; 
-    config.appName = "Faehm";
-
+    Adren::Config config{};
+    config.debug = true;
+    
     config.models = {
         Adren::Model("engine/resources/models/batman.obj", "engine/resources/textures/batman.png", false),
         Adren::Model("engine/resources/models/testingthing.obj", "engine/resources/textures/gmod.jpg", false),

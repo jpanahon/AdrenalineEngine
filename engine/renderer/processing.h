@@ -3,32 +3,22 @@
     Adrenaline Engine
 
     This handles the declaration of the buffers.
-    Copyright © 2021  Stole Your Shoes. All rights reserved.
 */
 
 #pragma once
-#include "pipeline.h"
+#include "swapchain.h"
 #include "model.h"
-#include "display.h"
-#include "global.h"
 
 namespace Adren {
 class Processing {
 public:
-    Processing(RendererVariables& renderer, Pipeline& pipeline, std::vector<Model>& models, Display& display) : renderer(renderer), pipeline(pipeline), models(models), display(display) { 
-        
-    }
+    Processing(Swapchain& swapchain, VkDevice& device, VkPhysicalDevice& physicalDevice, std::vector<Model>& models, VkQueue& graphicsQueue, VkQueue& presentQueue, VkSurfaceKHR& surface, GLFWwindow* window, glm::vec3& cameraPos, glm::vec3& cameraFront, glm::vec3& cameraUp, bool& framebufferResized) : swapchain(swapchain), device(device), physicalDevice(physicalDevice), 
+        models(models), graphicsQueue(graphicsQueue), presentQueue(presentQueue), surface(surface), window(window), 
+        cameraPos(cameraPos), cameraFront(cameraFront), cameraUp(cameraUp), framebufferResized(framebufferResized) {}
 
-    ~Processing() {
-        if (uboDynamicData.model) {
-            alignedFree(uboDynamicData.model);
-        }
-    }
+    ~Processing();
     
     void createVertexBuffer();
-
-    void createBuffer(VkDeviceSize& size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, 
-        VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -38,10 +28,6 @@ public:
 
     void createCommandBuffers();
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-    void createFramebuffers();
-
     void createUniformBuffers();
 
     void updateUniformBuffer(uint32_t currentImage);
@@ -50,38 +36,11 @@ public:
 
     void updateDynamicUniformBuffer(uint32_t currentImage);
 
-    VkCommandBuffer beginSingleTimeCommands();
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-    void createDepthResources();
-    
     Texture createTextureImage(std::string TEXTURE_PATH);
     
-    VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, 
-        VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
-    
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    
-    void createTextureSampler();
-    
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-    
-    void createSwapChain();
-    
-    void createImageViews();
-    
-    void createRenderPass();
-    
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-    
-    void recreateSwapChain();
-    
-    void cleanupSwapChain();
     
     VkImageView createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags);
 
@@ -89,14 +48,44 @@ public:
     
     void createSyncObjects();
     
-    void drawFrame();
-private:
-    RendererVariables& renderer;
-    Pipeline& pipeline;
-    std::vector<Model>& models;
-    Display& display;
+    void recreateSwapChain(std::vector<Texture> textures);
 
-    UboDynamicData uboDynamicData;
-    bool frameStarted{false};
+    void drawFrame(std::vector<Texture> textures);
+    
+    VkCommandPool commandPool;
+private:
+    VkDevice& device;
+    VkPhysicalDevice& physicalDevice;
+    VkSurfaceKHR& surface;
+    VkQueue& graphicsQueue;
+    VkQueue& presentQueue;
+    bool& framebufferResized;
+    GLFWwindow* window;
+    glm::vec3& cameraPos;
+    glm::vec3& cameraFront;
+    glm::vec3& cameraUp;
+
+    Swapchain& swapchain;
+    std::vector<Model>& models;
+    size_t currentFrame = 0;
+    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+
+    std::vector<uint32_t> indexCounts;
+    std::vector<uint32_t> vertexCounts;
+
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
+    int maxFramesInFlight;
+
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> imagesInFlight;
 };
 }
