@@ -379,15 +379,18 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
         dynamicBufferInfo.buffer = dynamicUniformBuffers[i];
         dynamicBufferInfo.offset = 0;
         dynamicBufferInfo.range = sizeof(UboDynamicData);
+        
+        VkSamplerCreateInfo sampInfo = ::samplerInfo();
+        vibeCheck(vkCreateSampler(device, &sampInfo, nullptr, &sampler));
 
-        VkDescriptorImageInfo samplerInfo[textures.size()];
+        VkDescriptorImageInfo samplerInfo{};
+        samplerInfo.sampler = sampler;
 
         VkDescriptorImageInfo imageInfo[textures.size()];
         for (uint32_t f = 0; f < textures.size(); f++) {
-            imageInfo[f].sampler = textures[f].sampler;     
+            imageInfo[f].sampler = sampler;     
             imageInfo[f].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[f].imageView = textures[f].textureImageView;
-            samplerInfo[f].sampler = textures[f].sampler;
         }
 
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
@@ -414,7 +417,7 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
         descriptorWrites[2].dstArrayElement = 0;
         descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         descriptorWrites[2].descriptorCount = 1;
-        descriptorWrites[2].pImageInfo = samplerInfo;
+        descriptorWrites[2].pImageInfo = &samplerInfo;
 
         descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3].dstSet = descriptorSets[i];

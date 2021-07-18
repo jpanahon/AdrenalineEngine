@@ -13,7 +13,6 @@ Adren::Renderer::~Renderer() {
         vkDestroyImageView(devices.device, tex.textureImageView, nullptr);
         vkDestroyImage(devices.device, tex.texture, nullptr);
         vkFreeMemory(devices.device, tex.textureImageMemory, nullptr);
-        vkDestroySampler(devices.device, tex.sampler, nullptr);
     }
 
     vkDestroySurfaceKHR(instance, display.surface, nullptr);
@@ -93,7 +92,7 @@ void Adren::Renderer::mainLoop() {
         gui.newImguiFrame();
         gui.startGUI();
         processing.drawFrame(textures);
-        processInput();
+        // processInput();
     }
 
     vkDeviceWaitIdle(devices.device);
@@ -102,7 +101,7 @@ void Adren::Renderer::mainLoop() {
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    gui.initImGui();
+    // gui.initImGui();
     mainLoop();
 }
 

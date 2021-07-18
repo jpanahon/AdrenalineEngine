@@ -18,8 +18,8 @@ public:
         GLFWwindow* window) : device(device), physicalDevice(physicalDevice), surface(surface), window(window) {}
 
 	~Swapchain() { 
-        cleanupSwapChain(); 
-        
+        cleanupSwapChain();
+        vkDestroySampler(device, sampler, nullptr); 
     }
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -70,6 +70,8 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
+
+    VkSampler sampler;
 
 };
 }

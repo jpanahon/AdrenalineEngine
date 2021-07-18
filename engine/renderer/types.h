@@ -92,7 +92,6 @@ struct Texture {
     VkImage texture;
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
-    VkSampler sampler;
 };
 
 struct UboDynamicData {

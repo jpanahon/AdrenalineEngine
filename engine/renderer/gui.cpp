@@ -35,6 +35,7 @@ void Adren::GUI::initImGui() {
     pool_info.pPoolSizes = pool_sizes;
 
     vibeCheck(vkCreateDescriptorPool(device, &pool_info, nullptr, &imguiPool));
+    std::cout << "\n \n Passed the vibe check \n \n";
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();

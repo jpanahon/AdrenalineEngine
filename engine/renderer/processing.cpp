@@ -206,9 +206,6 @@ Texture Adren::Processing::createTextureImage(std::string TEXTURE_PATH) {
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 
     tex.textureImageView = swapchain.createImageView(tex.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    VkSamplerCreateInfo samplerInfo = ::samplerInfo();
-    vibeCheck(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler));
     
     return tex;
 }
