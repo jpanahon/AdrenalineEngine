@@ -69,11 +69,12 @@ void Adren::Renderer::initVulkan() {
     swapchain.createGraphicsPipeline();
     processing.createCommandPool();
     swapchain.createDepthResources();
-    swapchain.createFramebuffers(); 
+    swapchain.createFramebuffers();
 
     for (auto& model : models) {
         textures.push_back(processing.createTextureImage(model.texturePath));
     }
+
     processing.displayModels();
     processing.createVertexBuffer();
     processing.createIndexBuffer();
@@ -92,7 +93,7 @@ void Adren::Renderer::mainLoop() {
         gui.newImguiFrame();
         gui.startGUI();
         processing.drawFrame(textures);
-        // processInput();
+        processInput();
     }
 
     vkDeviceWaitIdle(devices.device);
@@ -101,7 +102,7 @@ void Adren::Renderer::mainLoop() {
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    // gui.initImGui();
+    gui.initImGui();
     mainLoop();
 }
 

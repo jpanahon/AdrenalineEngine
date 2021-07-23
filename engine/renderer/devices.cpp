@@ -67,11 +67,11 @@ void Adren::Devices::pickPhysicalDevice() {
 }
 
 void Adren::Devices::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = ::findQueueFamilies(physicalDevice, surface);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
-    VkDeviceQueueCreateInfo queueCreateInfo = deviceQueueCreateInfo();
+    VkDeviceQueueCreateInfo queueCreateInfo = ::deviceQueueCreateInfo();
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         queueCreateInfo.queueFamilyIndex = queueFamily;

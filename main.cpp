@@ -9,7 +9,7 @@
 
 int main() {
     Adren::Config config{};
-    config.debug = true;
+    // config.debug = true;
     
     config.models = {
         Adren::Model("engine/resources/models/batman.obj", "engine/resources/textures/batman.png", false),

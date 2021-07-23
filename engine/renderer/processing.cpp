@@ -92,7 +92,7 @@ void Adren::Processing::createIndexBuffer() {
 }
 
 void Adren::Processing::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices queueFamilyIndices = ::findQueueFamilies(physicalDevice, surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -109,7 +109,7 @@ void Adren::Processing::createCommandBuffers() {
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
     vibeCheck(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
 }
