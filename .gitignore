@@ -3,6 +3,7 @@
 Adrenaline-Engine
 Adrenaline-Engine.exe
 CMakeCache.txt
+CMakePresets.json
 Makefile
 cmake_install.cmake 
 imgui.ini
