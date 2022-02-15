@@ -15,7 +15,7 @@ NOTE: Currently it is in pre-beta meaning it is not suitable for public use yet 
 <li> Audio. </li>
 <li> Framework for game logic. </li>
 <li> Possibly create a design suite. </li>
-<li> Make it cross platform (Currently writing and testing on a Mac) </li>
+<li> Make it cross platform (Currently tested on Mac and Windows) </li>
 <li> Ultimately create a game using the engine. </li>
 
 # Libraries Used
@@ -25,5 +25,9 @@ NOTE: Currently it is in pre-beta meaning it is not suitable for public use yet 
 <li> Model Manipulation: https://github.com/g-truc/glm </li>
 <li> Model Loading: https://github.com/tinyobjloader/tinyobjloader (For now) </li>
 <li> Image Loading: https://github.com/nothings/stb </li>
-<li> Memory Allocation: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator (To be implemented Soon™) </li>
+<li> Memory Allocation: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator </li>
 <li> GUI: https://github.com/ocornut/imgui </li>
+
+# DISCLAIMER
+
+This project is still in development, and as the sole developer I do not have much time to develop this. 
