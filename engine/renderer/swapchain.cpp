@@ -353,7 +353,7 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
     allocInfo.pSetLayouts = layouts.data();
 
     descriptorSets.resize(swapChainImages.size());
-    Adren::Tools::vibeCheck("ALLOCATE DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
+    Adren::Tools::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
 
     int textureSize = textures.size();
     for (size_t i = 0; i < descriptorSets.size(); i++) {
@@ -365,7 +365,7 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
         VkDescriptorBufferInfo dynamicBufferInfo{};
         dynamicBufferInfo.buffer = dynamicUniformBuffers[i].buffer;
         dynamicBufferInfo.offset = 0;
-        dynamicBufferInfo.range = sizeof(UboDynamicData);
+        dynamicBufferInfo.range = sizeof(glm::mat4);
 
         VkSamplerCreateInfo sampInfo = Adren::Info::samplerInfo();
         Adren::Tools::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));

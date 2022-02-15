@@ -198,26 +198,30 @@ void Adren::Renderer::cleanup() {
 }
 void Adren::Renderer::processInput() {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.pos += 0.5f * camera.front;
+        camera.pos += 0.05f * camera.front;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.pos -= 0.5f * camera.front;
+        camera.pos -= 0.05f * camera.front;
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.pos -= glm::normalize(glm::cross(camera.front, camera.up)) * 0.5f;
+        camera.pos -= glm::normalize(glm::cross(camera.front, camera.up)) * 0.05f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.pos += glm::normalize(glm::cross(camera.front, camera.up)) * 0.5f;
+        camera.pos += glm::normalize(glm::cross(camera.front, camera.up)) * 0.05f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        camera.pos += 0.5f * camera.up;
+        camera.pos += 0.05f * camera.up;
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        camera.pos -= 0.5f * camera.up;
+        camera.pos -= 0.05f * camera.up;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS) {
+        cleanup();
     }
 }
