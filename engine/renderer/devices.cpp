@@ -1,6 +1,6 @@
 /*
     devices.cpp
-    Untitled Game
+    Adrenaline Engine
 
     This handles things related to the physical or logical devices.
 */
@@ -27,13 +27,13 @@ bool Adren::Devices::checkDeviceExtensionSupport(VkPhysicalDevice& device) {
 }
 
 bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    QueueFamilyIndices indices = findQueueFamilies(device, surface);
+    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(device, surface);
     
     bool extensionsSupported = checkDeviceExtensionSupport(device);
     
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface); 
+        SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(device, surface); 
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
     
@@ -67,11 +67,11 @@ void Adren::Devices::pickPhysicalDevice() {
 }
 
 void Adren::Devices::createLogicalDevice() {
-    QueueFamilyIndices indices = ::findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
-    VkDeviceQueueCreateInfo queueCreateInfo = ::deviceQueueCreateInfo();
+    VkDeviceQueueCreateInfo queueCreateInfo = Adren::Info::deviceQueueCreateInfo();
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -100,7 +100,7 @@ void Adren::Devices::createLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
     
-    vibeCheck(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+    Adren::Tools::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
     
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);

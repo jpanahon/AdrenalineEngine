@@ -9,12 +9,12 @@
 
 int main() {
     Adren::Config config{};
-    // config.debug = true;
+    config.debug = true;
+    config.enableGUI = false;
     
     config.models = {
-        Adren::Model("engine/resources/models/batman.obj", "engine/resources/textures/batman.png", false),
-        Adren::Model("engine/resources/models/testingthing.obj", "engine/resources/textures/gmod.jpg", false),
-        Adren::Model("engine/resources/models/viking_room.obj", "engine/resources/textures/viking_room.png", false)
+        Adren::Model("../engine/resources/models/batman.obj", "../engine/resources/textures/batman.png", false),
+        Adren::Model("../engine/resources/models/viking_room.obj", "../engine/resources/textures/viking_room.png", false)
     };
 
     Adren::Engine engine(config); 

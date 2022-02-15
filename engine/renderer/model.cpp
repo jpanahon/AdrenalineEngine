@@ -6,6 +6,9 @@
 */
 
 #include "model.h"
+#include <stdexcept>
+#include <iostream>
+#include <string>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include "types.h"
@@ -18,9 +21,12 @@ Adren::Model::Model(std::string modelPath, std::string texturePath, bool player,
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, modelPath.c_str())) { 
-        throw std::runtime_error(warn + err);
+    try {
+        tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, modelPath.c_str());
+    } catch (const std::exception& e) {
+        std::cout << warn + err;
     }
+
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};

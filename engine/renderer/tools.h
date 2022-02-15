@@ -15,17 +15,17 @@
 #include <fstream>
 #include <set>
 #include "types.h"
+#include "vk_mem_alloc.h"
 
-#define vibeCheck(x)                                                 \
-    do                                                              \
-    {                                                               \
-        VkResult err = x;                                           \
-        if (err)                                                    \
-        {                                                           \
-            std::cout << "VULKAN ERROR: " << err << std::endl; \
-            abort();                                                \
-        }                                                           \
-    } while (0)
+namespace Adren::Tools {
+inline void vibeCheck(std::string name, VkResult x) {
+    if (x != VK_SUCCESS) {
+        std::cout << "VULKAN ERROR FOR " << name << ": " << x << "\n \n" << std::endl;
+        abort();
+    } else {
+        std::cout << name << " PASSES THE VIBE CHECK! \n \n" << std::endl;
+    }
+}
 
 inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR& surface) {
     QueueFamilyIndices indices;
@@ -59,61 +59,6 @@ inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
     return indices;
 }
 
-inline std::vector<char> readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    size_t fileSize = (size_t) file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
-}
-
-inline VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice device) {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    
-    VkShaderModule shaderModule;
-    
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) { 
-        throw std::runtime_error("failed to create shader module!");
-    }
-    
-    return shaderModule;
-}
-
-inline VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice& physicalDevice) {
-    for (VkFormat format : candidates) {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
-
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-            return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-            return format;
-        }
-    }
-
-    throw std::runtime_error("failed to find supported format!");
-}
-
-inline VkFormat findDepthFormat(VkPhysicalDevice& physicalDevice) {
-    return findSupportedFormat(
-    {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-        VK_IMAGE_TILING_OPTIMAL,VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, physicalDevice
-    );
-}
-
 inline SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice& device, VkSurfaceKHR& surface) {
     SwapChainSupportDetails details;
     
@@ -137,39 +82,6 @@ inline SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice& device, V
     
     return details;
 }
-
-/*
-struct RendererVariables {
-    GLFWwindow* window;
-    
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    
-    VkPhysicalDevice physicalDevice; 
-    VkDevice device;
-    
-    VkQueue graphicsQueue;
-    VkQueue presentQueue; 
-    
-    VkSwapchainKHR swapChain; 
-    
-    std::vector<Texture> textures;
-
-    VkRenderPass renderPass;
-    
-    std::vector<VkCommandBuffer> commandBuffers;
-    
-    VmaAllocator allocator;
-    
-    VkSampler textureSampler;
-    
-    
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    
-    std::vector<VkDeviceMemory> dynamicUniformBuffersMemory;
-
-}; 
-*/
 
 inline VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
     VkCommandBufferAllocateInfo allocInfo{};
@@ -217,24 +129,38 @@ inline uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags proper
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-inline void createBuffer(VkDeviceSize& size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDevice& device, VkPhysicalDevice& physicalDevice) {
+inline void createBuffer(VmaAllocator& allocator, VkDeviceSize& size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer& buffer, VmaMemoryUsage vmaUsage) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    vibeCheck(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer));
+    VmaAllocationCreateInfo vmaAllocInfo{};
+    vmaAllocInfo.usage = vmaUsage;
+    vmaAllocInfo.preferredFlags = properties;
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+    vibeCheck("CREATED BUFFER", vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.alloc, nullptr));
+}
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties, physicalDevice);
+inline void* alignedAlloc(size_t size, size_t alignment) {
+    void *data = nullptr;
+#if defined(_MSC_VER) || defined(__MINGW32__)
+    data = _aligned_malloc(size, alignment);
+#else
+    int res = posix_memalign(&data, alignment, size);
+    if (res != 0)
+        data = nullptr;
+#endif
+    return data;
+}
 
-    vibeCheck(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory));
+inline void alignedFree(void* data) {
+#if defined(_MSC_VER) || defined(__MINGW32__)
+    _aligned_free(data);
+#else
+    free(data);
+#endif
+}
 
-    vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }

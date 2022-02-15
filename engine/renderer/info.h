@@ -16,6 +16,7 @@
 #include <array>
 #include <string>
 
+namespace Adren::Info {
 inline VkApplicationInfo appInfo() {
     std::string appName = "Adrenaline Engine";
     VkApplicationInfo info{};
@@ -23,8 +24,8 @@ inline VkApplicationInfo appInfo() {
     info.pApplicationName = appName.c_str();
     info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     info.pEngineName = "Adrenaline Engine";
-    info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    info.apiVersion = VK_API_VERSION_1_0;
+    info.engineVersion = VK_API_VERSION_1_2;
+    info.apiVersion = VK_API_VERSION_1_2;
     
     return info;
 }
@@ -237,4 +238,5 @@ inline VkSamplerCreateInfo samplerInfo() {
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
     return samplerInfo;
+}
 }

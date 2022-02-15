@@ -15,7 +15,7 @@ public:
     
     Debugger(bool& debug, VkInstance& instance) : debug(debug), instance(instance) {}
 
-    ~Debugger() { if (debug) { DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); } }
+    void cleanup() { if (debug) { DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); } }
     
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger); 
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator); 
@@ -27,7 +27,7 @@ public:
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 private:
     bool& debug;
-    VkDebugUtilsMessengerEXT debugMessenger;
     VkInstance& instance;
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 }; 
 }

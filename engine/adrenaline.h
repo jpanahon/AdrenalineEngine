@@ -12,15 +12,13 @@ namespace Adren {
 struct Config {
     std::vector<Model> models;
     bool debug = false;
-
+    bool enableGUI = true;
 };
 
 class Engine {
 public:
-    Engine(Config& config) : config(config) {
-    }
+    Engine(Config& config) : config(config) {}
     
-    void setupRenderer();
     void run();
 private:
     Config& config;

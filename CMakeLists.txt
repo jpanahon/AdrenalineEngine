@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(Adrenaline-Engine)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -std=c++17")
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 file(GLOB SOURCE_FILES "main.cpp" "engine/renderer/*.cpp" "engine/*.cpp" "lib/imgui/*.cpp")
@@ -15,7 +15,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED FATAL_ERROR)
 add_subdirectory("lib/glfw-3.3.4")
 
 if (VULKAN_FOUND)

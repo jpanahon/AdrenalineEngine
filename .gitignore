@@ -1,6 +1,7 @@
 .DS_Store
 .gitattributes
 Adrenaline-Engine
+Adrenaline-Engine.exe
 CMakeCache.txt
 Makefile
 cmake_install.cmake 
@@ -17,3 +18,5 @@ imgui.ini
 /lib/glfw-3.3.4/cmake_uninstall.cmake.in\
 /lib/glfw-3.3.4/src
 /lib/glfw
+/windows-default
+/.vs

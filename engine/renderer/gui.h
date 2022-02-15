@@ -17,17 +17,15 @@ public:
     GUI(VkDevice& device, VkInstance& instance, VkPhysicalDevice& physicalDevice, VkQueue& graphicsQueue, 
         std::vector<VkImage>& swapChainImages, VkRenderPass& renderPass, VkCommandPool& commandPool, 
         VkSurfaceKHR& surface, GLFWwindow* window) : device(device), instance(instance), physicalDevice(physicalDevice), 
-        graphicsQueue(graphicsQueue),swapChainImages(swapChainImages), renderPass(renderPass), 
+        graphicsQueue(graphicsQueue), swapChainImages(swapChainImages), renderPass(renderPass), 
         commandPool(commandPool), surface(surface), window(window) {}
 
-    ~GUI() { shutDownImGui(); }
-
     void initImGui();
-    void shutDownImGui();
+    void cleanup();
     void newImguiFrame();
     void startGUI();
 private:
-    VkDescriptorPool imguiPool;
+    VkDescriptorPool imguiPool = VK_NULL_HANDLE;
     VkDevice& device;
     VkInstance& instance;
     VkQueue& graphicsQueue;

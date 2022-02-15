@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <optional>
 #include <array>
+#include "vk_mem_alloc.h"
 
 struct Vertex {
     glm::vec3 pos;
@@ -98,4 +99,26 @@ struct UboDynamicData {
     glm::mat4 *model = nullptr;
 };
 
+struct Frame {
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+    VkFence fence;
+    VkSemaphore iSemaphore;
+    VkSemaphore rSemaphore;
+};
 
+struct Camera {
+    glm::vec3 pos = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 front = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+};
+
+struct Buffer {
+    VkBuffer buffer;
+    VmaAllocation alloc;
+};
+
+struct Image {
+    VkImage image;
+    VmaAllocation alloc;
+};

@@ -34,41 +34,42 @@ void Adren::GUI::initImGui() {
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
 
-    vibeCheck(vkCreateDescriptorPool(device, &pool_info, nullptr, &imguiPool));
-    std::cout << "\n \n Passed the vibe check \n \n";
+    Adren::Tools::vibeCheck("IMGUI DESCRIPTOR POOL", vkCreateDescriptorPool(device, &pool_info, nullptr, &imguiPool));
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO(); 
+    (void)io;
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
 
-    ImGui_ImplVulkan_InitInfo init_info{};
+    ImGui_ImplVulkan_InitInfo init_info = {};
     init_info.Instance = instance;
     init_info.PhysicalDevice = physicalDevice;
     init_info.Device = device;
     init_info.Queue = graphicsQueue;
-    QueueFamilyIndices queueFam = findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices queueFam = Adren::Tools::findQueueFamilies(physicalDevice, surface);
     init_info.QueueFamily = queueFam.graphicsFamily.value();
     init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = imguiPool;
     init_info.Allocator = VK_NULL_HANDLE;
     init_info.MinImageCount = 2;
     init_info.ImageCount = swapChainImages.size();
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     ImGui_ImplVulkan_Init(&init_info, renderPass);
 
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands(device,  commandPool);
+    VkCommandBuffer commandBuffer = Adren::Tools::beginSingleTimeCommands(device, commandPool);
 
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 
-    endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
+    Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
 
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void Adren::GUI::shutDownImGui() {
+void Adren::GUI::cleanup() {
     vkDestroyDescriptorPool(device, imguiPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();

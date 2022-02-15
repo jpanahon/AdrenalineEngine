@@ -19,17 +19,17 @@ class Devices {
 public:
     Devices(bool& debug, VkInstance& instance, VkSurfaceKHR& surface) : debug(debug), instance(instance), surface(surface) {}
 
-    ~Devices() { vkDestroyDevice(device, nullptr); }
+    void cleanup() { vkDestroyDevice(device, nullptr); }
     bool checkDeviceExtensionSupport(VkPhysicalDevice& device);
     bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
     void pickPhysicalDevice();
     void createLogicalDevice();
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
-    VkPhysicalDevice physicalDevice;  
-    VkDevice device;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;  
+    VkDevice device = VK_NULL_HANDLE;
+    VkQueue graphicsQueue = VK_NULL_HANDLE;
+    VkQueue presentQueue = VK_NULL_HANDLE;
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 private:
     bool& debug;
