@@ -14,7 +14,7 @@ class Processing {
 public:
     Processing(Swapchain& swapchain, VkDevice& device, VkPhysicalDevice& physicalDevice, 
         std::vector<Model>& models, VkQueue& graphicsQueue, VkQueue& presentQueue, 
-        VkSurfaceKHR& surface, GLFWwindow* window, Camera& camera, bool enableGUI, VmaAllocator& allocator) : swapchain(swapchain),
+        VkSurfaceKHR& surface, GLFWwindow* window, Camera& camera, bool& enableGUI, VmaAllocator& allocator) : swapchain(swapchain),
         device(device), physicalDevice(physicalDevice), models(models), graphicsQueue(graphicsQueue), 
         presentQueue(presentQueue), surface(surface), window(window), camera(camera), enableGUI(enableGUI), allocator(allocator) {}
     

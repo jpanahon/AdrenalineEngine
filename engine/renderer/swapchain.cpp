@@ -1,8 +1,8 @@
-/* 
-	swapchain.cpp
-	Adrenaline Engine
+/*
+    swapchain.cpp
+    Adrenaline Engine
 
-	This has the definitions of the functions related to the swapchain.
+    This has the definitions of the functions related to the swapchain.
 */
 
 #include "swapchain.h"
@@ -22,80 +22,82 @@ VkSurfaceFormatKHR Adren::Swapchain::chooseSwapSurfaceFormat(const std::vector<V
             return availableFormat;
         }
     }
-    
+
     return availableFormats[0];
 }
 
 VkExtent2D Adren::Swapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
-    } else {
+    }
+    else {
         int width, height;
-        
+
         glfwGetFramebufferSize(window, &width, &height);
         VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-        
+
         actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
         actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
-        
+
         return actualExtent;
     }
 }
 
 void Adren::Swapchain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(physicalDevice, surface);
-    
+
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-    
+
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 2;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
-    
+
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
-    
+
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    
+
     QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-    
+    uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
     if (indices.graphicsFamily != indices.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
+    }
+    else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
-    
+
     createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    
+
     createInfo.oldSwapchain = VK_NULL_HANDLE;
-    
+
     Adren::Tools::vibeCheck("SWAPCHAIN", vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain));
-    
+
     vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
-    
+
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
 }
 
 void Adren::Swapchain::createImageViews() {
     swapChainImageViews.resize(swapChainImages.size());
-    
+
     for (uint32_t i = 0; i < swapChainImages.size(); i++) {
         swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
     }
@@ -104,7 +106,7 @@ void Adren::Swapchain::createImageViews() {
 void Adren::Swapchain::createRenderPass() {
     VkAttachmentDescription colorAttachment = Adren::Info::colorAttachment(swapChainImageFormat);
     VkAttachmentDescription depthAttachment = Adren::Info::depthAttachment(findDepthFormat(physicalDevice));
-    
+
 
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
@@ -122,7 +124,7 @@ void Adren::Swapchain::createRenderPass() {
 
     VkSubpassDependency dependency = Adren::Info::dependency();
 
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -141,7 +143,7 @@ VkPresentModeKHR Adren::Swapchain::chooseSwapPresentMode(const std::vector<VkPre
             return availablePresentMode;
         }
     }
-    
+
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -189,10 +191,10 @@ VkImageView Adren::Swapchain::createImageView(VkImage& image, VkFormat format, V
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
-    
+
     VkImageView imageView;
     Adren::Tools::vibeCheck("IMAGE VIEW", vkCreateImageView(device, &viewInfo, nullptr, &imageView));
-    
+
     return imageView;
 }
 
@@ -214,8 +216,7 @@ void Adren::Swapchain::createFramebuffers() {
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        Adren::Tools::vibeCheck("SWAPCHAIN FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, 
-            &swapChainFramebuffers[i]));
+        Adren::Tools::vibeCheck("SWAPCHAIN FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]));
     }
 }
 
@@ -246,10 +247,10 @@ void Adren::Swapchain::createGraphicsPipeline() {
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = Adren::Info::inputAssembly();
-    
+
     VkViewport viewport = Adren::Info::viewport();
-    viewport.width = (float) swapChainExtent.width;
-    viewport.height = (float) swapChainExtent.height;
+    viewport.width = (float)swapChainExtent.width;
+    viewport.height = (float)swapChainExtent.height;
 
     VkRect2D scissor = Adren::Info::scissor();
     scissor.extent = swapChainExtent;
@@ -261,7 +262,7 @@ void Adren::Swapchain::createGraphicsPipeline() {
     VkPipelineRasterizationStateCreateInfo rasterizer = Adren::Info::rasterizer();
 
     VkPipelineMultisampleStateCreateInfo multisampling = Adren::Info::multisampling();
-    
+
     VkPipelineDepthStencilStateCreateInfo depthStencil = Adren::Info::depthStencil();
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = Adren::Info::colorBlendAttachment();
@@ -315,7 +316,7 @@ void Adren::Swapchain::createDescriptorSetLayout() {
 
     VkDescriptorSetLayoutBinding textureLayoutBinding = Adren::Info::textureLayoutBinding(modelCount);
 
-    std::array<VkDescriptorSetLayoutBinding, 4> bindings = { uboLayoutBinding, dynamicUboLayoutBinding, samplerLayoutBinding, textureLayoutBinding };
+    std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboLayoutBinding, dynamicUboLayoutBinding, samplerLayoutBinding, textureLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -412,7 +413,7 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
         descriptorWrites[3].dstBinding = 3;
         descriptorWrites[3].dstArrayElement = 0;
         descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        descriptorWrites[3].descriptorCount = textureSize; 
+        descriptorWrites[3].descriptorCount = textureSize;
         descriptorWrites[3].pImageInfo = imageInfo;
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -465,7 +466,7 @@ std::vector<char> Adren::Swapchain::readFile(const std::string& filename) {
         std::cout << "Failed to open file!";
     }
 
-    size_t fileSize = (size_t) file.tellg();
+    size_t fileSize = (size_t)file.tellg();
     std::vector<char> buffer(fileSize);
 
     file.seekg(0);
@@ -481,13 +482,13 @@ VkShaderModule Adren::Swapchain::createShaderModule(const std::vector<char>& cod
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    
+
     VkShaderModule shaderModule;
-    
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) { 
+
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
         throw std::runtime_error("failed to create shader module!");
     }
-    
+
     return shaderModule;
 }
 
@@ -498,7 +499,8 @@ VkFormat Adren::Swapchain::findSupportedFormat(const std::vector<VkFormat>& cand
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
             return format;
         }
     }
@@ -508,7 +510,7 @@ VkFormat Adren::Swapchain::findSupportedFormat(const std::vector<VkFormat>& cand
 
 VkFormat Adren::Swapchain::findDepthFormat(VkPhysicalDevice& physicalDevice) {
     return findSupportedFormat(
-    {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-        VK_IMAGE_TILING_OPTIMAL,VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, physicalDevice
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, physicalDevice
     );
 }

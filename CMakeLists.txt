@@ -16,7 +16,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
-add_subdirectory("lib/glfw-3.3.4")
+add_subdirectory("lib/glfw-3.3.6")
 
 if (VULKAN_FOUND)
 	message(STATUS "Found Vulkan, Including and Linking now")

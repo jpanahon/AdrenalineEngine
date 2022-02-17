@@ -9,4 +9,5 @@
 
 void Adren::Engine::run() {
 	Renderer renderer(config.models, config.debug, config.enableGUI);
+	renderer.run();
 }

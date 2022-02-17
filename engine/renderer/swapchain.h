@@ -1,8 +1,8 @@
-/* 
-	swapchain.h
-	Adrenaline Engine
+/*
+    swapchain.h
+    Adrenaline Engine
 
-	This has the declarations of the functions related to the swapchain.
+    This has the declarations of the functions related to the swapchain.
 */
 
 #pragma once
@@ -15,11 +15,11 @@
 namespace Adren {
 class Swapchain {
 public:
-	Swapchain(VkDevice& device, VkPhysicalDevice& physicalDevice, VkSurfaceKHR& surface, 
+    Swapchain(VkDevice& device, VkPhysicalDevice& physicalDevice, VkSurfaceKHR& surface,
         GLFWwindow* window, int& modelCount, VmaAllocator& allocator) : device(device), physicalDevice(physicalDevice), surface(surface),
         window(window), modelCount(modelCount), allocator(allocator) {}
 
-	void cleanup() { 
+    void cleanup() {
         vkDestroyImage(device, depthImage, nullptr);
         vkDestroyImageView(device, depthImageView, nullptr);
         vkFreeMemory(device, depthImageMemory, nullptr);
@@ -34,7 +34,7 @@ public:
 
         vkDestroyRenderPass(device, renderPass, nullptr);
         vkDestroySwapchainKHR(device, swapChain, nullptr);
-        vkDestroySampler(device, sampler, nullptr); 
+        vkDestroySampler(device, sampler, nullptr);
 
         for (int i = 0; i < swapChainImages.size(); i++) {
             vmaDestroyBuffer(allocator, uniformBuffers[i].buffer, uniformBuffers[i].alloc);
@@ -45,10 +45,10 @@ public:
         }
     }
 
-	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createSwapChain();
-    VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, 
+    VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
     VkImageView createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags);
     static std::vector<char> readFile(const std::string& filename);
@@ -58,8 +58,8 @@ public:
     void createImageViews();
     void createRenderPass();
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	void createFramebuffers();
-	void createGraphicsPipeline();
+    void createFramebuffers();
+    void createGraphicsPipeline();
     void createDescriptorSetLayout();
     void createDescriptorPool();
     void createDescriptorSets(std::vector<Texture>& textures);
@@ -88,12 +88,12 @@ public:
 
     VmaAllocator& allocator;
 private:
-	VkDevice& device;
-	VkPhysicalDevice& physicalDevice;
-	VkSurfaceKHR& surface;
-	
+    VkDevice& device;
+    VkPhysicalDevice& physicalDevice;
+    VkSurfaceKHR& surface;
+
     VkFormat swapChainImageFormat;
-   
+
     VkDescriptorSetLayout descriptorSetLayout;
 
     VkDescriptorPool descriptorPool;

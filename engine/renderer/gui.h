@@ -14,13 +14,13 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(VkDevice& device, VkInstance& instance, VkPhysicalDevice& physicalDevice, VkQueue& graphicsQueue, 
-        std::vector<VkImage>& swapChainImages, VkRenderPass& renderPass, VkCommandPool& commandPool, 
-        VkSurfaceKHR& surface, GLFWwindow* window) : device(device), instance(instance), physicalDevice(physicalDevice), 
-        graphicsQueue(graphicsQueue), swapChainImages(swapChainImages), renderPass(renderPass), 
+    GUI(VkDevice& device, VkInstance& instance, VkPhysicalDevice& physicalDevice, VkQueue& graphicsQueue,
+        std::vector<VkImage>& swapChainImages, VkRenderPass& renderPass, VkCommandPool& commandPool,
+        VkSurfaceKHR& surface, GLFWwindow* window) : device(device), instance(instance), physicalDevice(physicalDevice),
+        graphicsQueue(graphicsQueue), swapChainImages(swapChainImages), renderPass(renderPass),
         commandPool(commandPool), surface(surface), window(window) {}
 
-    void initImGui();
+    void initImGui(GLFWwindow* window);
     void cleanup();
     void newImguiFrame();
     void startGUI();

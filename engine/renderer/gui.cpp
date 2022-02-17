@@ -1,8 +1,8 @@
 /*
-    window.cpp
+    gui.cpp
     Adrenaline Engine
 
-    Definitions for the functions in the Window class that handles the window you see.
+    Definitions for the functions in the gui class that handles the gui you see.
     
 */
 
@@ -12,7 +12,7 @@
 #include <imgui_impl_vulkan.h>
 #include "tools.h"
 
-void Adren::GUI::initImGui() {
+void Adren::GUI::initImGui(GLFWwindow* window) {
     VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -38,25 +38,27 @@ void Adren::GUI::initImGui() {
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); 
-    (void)io;
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
 
-    ImGui_ImplVulkan_InitInfo init_info = {};
+    ImGui_ImplVulkan_InitInfo init_info{};
     init_info.Instance = instance;
     init_info.PhysicalDevice = physicalDevice;
     init_info.Device = device;
     init_info.Queue = graphicsQueue;
+
     QueueFamilyIndices queueFam = Adren::Tools::findQueueFamilies(physicalDevice, surface);
+
     init_info.QueueFamily = queueFam.graphicsFamily.value();
     init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = imguiPool;
     init_info.Allocator = VK_NULL_HANDLE;
-    init_info.MinImageCount = 2;
+    init_info.MinImageCount = swapChainImages.size();
     init_info.ImageCount = swapChainImages.size();
+    init_info.CheckVkResultFn = NULL;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     ImGui_ImplVulkan_Init(&init_info, renderPass);
 
