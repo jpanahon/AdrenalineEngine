@@ -38,7 +38,7 @@ void Adren::Processing::createVertexBuffer() {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
     Buffer stagingBuffer;
     Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_ONLY);
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU);
     
     void* data;
     vmaMapMemory(allocator, stagingBuffer.alloc, &data);
@@ -68,7 +68,7 @@ void Adren::Processing::createIndexBuffer() {
 
     Buffer stagingBuffer;
     Adren::Tools::createBuffer(allocator,  bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_ONLY);
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
     void* data;
     vmaMapMemory(allocator, stagingBuffer.alloc, &data);
