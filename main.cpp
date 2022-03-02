@@ -8,14 +8,19 @@
 #include "engine/adrenaline.h"
 
 int main() {
-    Adren::Config config{};
+    Config config{};
     config.debug = true;
-    config.enableGUI = false;
+    config.enableGUI = true;
     
-    config.models = {
-        Adren::Model("../engine/resources/models/batman.obj", "../engine/resources/textures/batman.png", false),
-        Adren::Model("../engine/resources/models/viking_room.obj", "../engine/resources/textures/viking_room.png", false)
-    };
+    Model sponza("../engine/resources/models/sponza/sponza.gltf");
+
+    Model scientist("../engine/resources/models/scientist/scene.gltf");
+    scientist.rotationAngle = -90.0f;
+    scientist.rotationAxis = ADREN_X_AXIS;
+
+    //Model deccer("../engine/resources/models/deccer/SM_Deccer_Cubes_Textured_Embedded.gltf");
+
+    config.models = {sponza, scientist};
 
     Adren::Engine engine(config); 
 

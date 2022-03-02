@@ -1,8 +1,9 @@
 #version 450 core
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_nonuniform_qualifier : enable
 
 layout(binding = 2) uniform sampler texSampler; 
-layout(binding = 3) uniform texture2D textures[2];
+layout(binding = 3) uniform texture2D textures[126];
 
 layout(push_constant) uniform PER_OBJECT {
 	int imageIndex;

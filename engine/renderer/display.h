@@ -13,7 +13,7 @@
 namespace Adren {
 class Display {
 public:
-	Display(VkInstance& instance, Camera& camera): instance(instance), camera(camera) {}
+	Display(VkInstance& instance, Camera& camera) : instance(instance), camera(camera) {}
 
 	static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

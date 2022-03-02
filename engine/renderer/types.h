@@ -13,18 +13,26 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/hash.hpp>
 
-
+#include <iostream>
 #include <unordered_map>
 #include <optional>
 #include <array>
 #include "vk_mem_alloc.h"
+#include <tinygltf/tiny_gltf.h>
+
+#define ADREN_X_AXIS glm::vec3(1.0f, 0.0f, 0.0f)
+#define ADREN_Y_AXIS glm::vec3(0.0f, 1.0f, 0.0f)
+#define ADREN_Z_AXIS glm::vec3(1.0f, 0.0f, 1.0f)
+
 
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
+    glm::vec3 normal;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -93,6 +101,7 @@ struct Texture {
     VkImage texture;
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
+    int32_t imageIndex;
 };
 
 struct UboDynamicData {
@@ -108,17 +117,71 @@ struct Frame {
 };
 
 struct Camera {
+    bool toggled = true;
+
     glm::vec3 pos = glm::vec3(0.0f, 0.0f, 3.0f);
     glm::vec3 front = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    float lastX;
+    float lastY;
+
+    int height;
+    int width;
+};
+
+struct Model {
+    Model(std::string modelPath);
+
+    std::vector<Texture> textures;
+    glm::vec3 position = glm::vec3(0.0f);
+    float rotationAngle = 0.0f;
+    glm::vec3 rotationAxis = ADREN_Y_AXIS;
+
+    float scale = 0.0f;
+
+    struct Primitive {
+        uint32_t firstIndex;
+        uint32_t firstVertex;
+        uint32_t indexCount;
+        uint32_t vertexCount;
+        int32_t materialIndex;
+    } primitive;
+
+    struct Material {
+        glm::vec4 baseColorFactor = glm::vec4(1.0f);
+        uint32_t baseColorTextureIndex;
+    } material;
+
+    struct Image {
+        unsigned char* buffer = nullptr;
+        VkDeviceSize bufferSize = 0;
+
+        int height;
+        int width;
+    } image;
+
+    tinygltf::Model model;
+    std::vector<Primitive> primitives;
+    std::vector<Material> materials;
+    std::vector<Image> images;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 };
 
 struct Buffer {
     VkBuffer buffer;
     VmaAllocation alloc;
+    void* mapped;
 };
 
-struct Image {
+struct Config {
+    std::vector<Model> models;
+    bool debug = false;
+    bool enableGUI = true;
+};
+
+/*struct Image {
     VkImage image;
     VmaAllocation alloc;
-};
+};*/

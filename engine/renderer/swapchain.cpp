@@ -43,7 +43,7 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
     }
 }
 
-void Adren::Swapchain::createSwapChain() {
+void Adren::Swapchain::createSwapChain(VkSurfaceKHR& surface) {
     SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(physicalDevice, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -164,7 +164,7 @@ VkImage Adren::Swapchain::createImage(uint32_t width, uint32_t height, VkFormat 
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VkImage image;
-    Adren::Tools::vibeCheck("IMAGE CREATION", vkCreateImage(device, &imageInfo, nullptr, &image));
+    vkCreateImage(device, &imageInfo, nullptr, &image);
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -174,7 +174,7 @@ VkImage Adren::Swapchain::createImage(uint32_t width, uint32_t height, VkFormat 
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = Adren::Tools::findMemoryType(memRequirements.memoryTypeBits, properties, physicalDevice);
 
-    Adren::Tools::vibeCheck("IMAGE MEMORY ALLOCATION", vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory));
+    vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory);
     vkBindImageMemory(device, image, imageMemory, 0);
 
     return image;
@@ -193,7 +193,7 @@ VkImageView Adren::Swapchain::createImageView(VkImage& image, VkFormat format, V
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    Adren::Tools::vibeCheck("IMAGE VIEW", vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+    vkCreateImageView(device, &viewInfo, nullptr, &imageView);
 
     return imageView;
 }
@@ -277,7 +277,7 @@ void Adren::Swapchain::createGraphicsPipeline() {
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(int);
+    pushConstantRange.size = sizeof(glm::mat4);
     pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -307,14 +307,21 @@ void Adren::Swapchain::createGraphicsPipeline() {
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void Adren::Swapchain::createDescriptorSetLayout() {
+void Adren::Swapchain::createDescriptorSetLayout(std::vector<Model>& models) {
+    std::vector<Texture> textures;
+    for (Model m : models) {
+        for (const Texture& t : m.textures) {
+            textures.push_back(t);
+        }
+    }
+
     VkDescriptorSetLayoutBinding uboLayoutBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
 
     VkDescriptorSetLayoutBinding dynamicUboLayoutBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1);
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding = Adren::Info::samplerLayoutBinding();
 
-    VkDescriptorSetLayoutBinding textureLayoutBinding = Adren::Info::textureLayoutBinding(modelCount);
+    VkDescriptorSetLayoutBinding textureLayoutBinding = Adren::Info::textureLayoutBinding(textures.size());
 
     std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboLayoutBinding, dynamicUboLayoutBinding, samplerLayoutBinding, textureLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -346,6 +353,7 @@ void Adren::Swapchain::createDescriptorPool() {
 }
 
 void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
+    size_t textureSize = textures.size();
     std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -356,10 +364,9 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
     descriptorSets.resize(swapChainImages.size());
     Adren::Tools::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
 
-    int textureSize = textures.size();
     for (size_t i = 0; i < descriptorSets.size(); i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffers[i].buffer;
+        bufferInfo.buffer = uniformBuffer.buffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -373,7 +380,7 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
 
         VkDescriptorImageInfo samplerInfo{};
         samplerInfo.sampler = sampler;
-
+        std::cerr << "Texture Size: " << textureSize << "\n \n";
         VkDescriptorImageInfo* imageInfo;
         imageInfo = new VkDescriptorImageInfo[textureSize];
         for (uint32_t f = 0; f < textureSize; f++) {
@@ -381,6 +388,9 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
             imageInfo[f].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[f].imageView = textures[f].textureImageView;
         }
+
+        uint32_t counts[1];
+        counts[0] = textureSize;
 
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 
@@ -422,26 +432,26 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
 }
 
 void Adren::Swapchain::createUniformBuffers() {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    UniformBufferObject ubo;
+    VkDeviceSize bufferSize = sizeof(ubo);
 
-    uniformBuffers.resize(swapChainImages.size());
-
-    for (size_t i = 0; i < swapChainImages.size(); i++) {
-        Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], VMA_MEMORY_USAGE_CPU_TO_GPU);
-    }
+    Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, VMA_MEMORY_USAGE_GPU_ONLY);
+    vmaMapMemory(allocator, uniformBuffer.alloc, &uniformBuffer.mapped);
+    memcpy(uniformBuffer.mapped, &ubo, bufferSize);
 }
+
 void Adren::Swapchain::createDynamicUniformBuffers() {
     VkPhysicalDeviceProperties physicalDeviceProperties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     VkDeviceSize minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
     dynamicAlignment = sizeof(glm::mat4);
-    std::cerr << "MinUboAlignment = " << minUboAlignment;
+    std::cerr << "MinUboAlignment:  " << minUboAlignment << "\n \n";
     if (minUboAlignment > 0) {
         dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
 
-    std::cout << "Model Count: " << modelCount;
-    VkDeviceSize bufferSize = modelCount * dynamicAlignment;
+    std::cout << "Model Count: " << config.models.size() << "\n \n";
+    VkDeviceSize bufferSize = config.models.size() * dynamicAlignment;
     uboDynamicData.model = (glm::mat4*)Adren::Tools::alignedAlloc(bufferSize, dynamicAlignment);
     assert(uboDynamicData.model);
 
@@ -449,6 +459,8 @@ void Adren::Swapchain::createDynamicUniformBuffers() {
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniformBuffers[i], VMA_MEMORY_USAGE_CPU_TO_GPU);
+        vmaMapMemory(allocator, dynamicUniformBuffers[i].alloc, &dynamicUniformBuffers[i].mapped);
+        memcpy(dynamicUniformBuffers[i].mapped, uboDynamicData.model, dynamicAlignment * config.models.size());
     }
 }
 

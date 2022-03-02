@@ -27,6 +27,10 @@ inline void vibeCheck(std::string name, VkResult x) {
     }
 }
 
+inline void log(std::string log) {
+    std::cerr << log << "\n \n" << std::endl;
+}
+
 inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR& surface) {
     QueueFamilyIndices indices;
 
@@ -140,7 +144,7 @@ inline void createBuffer(VmaAllocator& allocator, VkDeviceSize& size, VkBufferUs
     vmaAllocInfo.usage = vmaUsage;
     vmaAllocInfo.preferredFlags = properties;
 
-    vibeCheck("CREATED BUFFER", vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.alloc, nullptr));
+    vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.alloc, nullptr);
 }
 
 inline void* alignedAlloc(size_t size, size_t alignment) {

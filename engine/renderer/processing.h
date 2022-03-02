@@ -7,70 +7,50 @@
 
 #pragma once
 #include "swapchain.h"
-#include "model.h"
 
 namespace Adren {
 class Processing {
 public:
-    Processing(Swapchain& swapchain, VkDevice& device, VkPhysicalDevice& physicalDevice, 
-        std::vector<Model>& models, VkQueue& graphicsQueue, VkQueue& presentQueue, 
-        VkSurfaceKHR& surface, GLFWwindow* window, Camera& camera, bool& enableGUI, VmaAllocator& allocator) : swapchain(swapchain),
-        device(device), physicalDevice(physicalDevice), models(models), graphicsQueue(graphicsQueue), 
-        presentQueue(presentQueue), surface(surface), window(window), camera(camera), enableGUI(enableGUI), allocator(allocator) {}
-    
+    Processing(Swapchain& swapchain, Camera& camera) : swapchain(swapchain), camera(camera) {}
     void createVertexBuffer();
-
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
     void createIndexBuffer();
-
-    void createCommands();
-
-    void updateUniformBuffer(uint32_t currentImage);
-
+    void createCommands(VkSurfaceKHR& surface);
+    void updateUniformBuffer();
     void updateDynamicUniformBuffer(uint32_t currentImage);
-
     void displayModels();
-    
     void createSyncObjects();
-    
-    //void recreateSwapChain();
-
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
-    Texture createTextureImage(std::string TEXTURE_PATH);
+    void loadTextures(std::vector<Texture>& textures);
     void drawFrame();
-
     void cleanup();
     
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-private:
-    VkDevice& device;
-    VkPhysicalDevice& physicalDevice;
-    VkSurfaceKHR& surface;
-    VkQueue& graphicsQueue;
-    VkQueue& presentQueue;
-
-    GLFWwindow* window;
-    Camera& camera;
-
     Swapchain& swapchain;
-    std::vector<Model>& models;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
+    VkDevice& device = swapchain.devices.device;
+    VkPhysicalDevice& physicalDevice = swapchain.devices.physicalDevice;
+    VkQueue& graphicsQueue = swapchain.devices.graphicsQueue;
+    VkQueue& presentQueue = swapchain.devices.presentQueue;
+
+    GLFWwindow* window = swapchain.window;
+    Camera& camera;
+private:
+
+    Config& config = swapchain.config;
     size_t currentFrame = 0;
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
-    std::vector<uint32_t> indexCounts;
-    std::vector<uint32_t> vertexCounts;
+    std::vector<VkDeviceSize> indexCounts;
+    std::vector<VkDeviceSize> vertexCounts;
 
     Buffer vertexBuffer;
     
     Buffer indexBuffer;
 
-    VmaAllocator& allocator;
+    VmaAllocator& allocator = swapchain.allocator;
 
     static constexpr int maxFramesInFlight = 3;
 
@@ -79,7 +59,5 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
-
-    bool& enableGUI;
 };
 }

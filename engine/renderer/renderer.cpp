@@ -12,10 +12,11 @@
 #include "renderer.h"
 #include "info.h"
 #include "tools.h"
+#include <chrono>
 
 
 void Adren::Renderer::createInstance() {
-    if (debug && !devices.checkValidationLayerSupport()) {
+    if (config.debug && !devices.checkValidationLayerSupport()) {
         throw std::runtime_error("Validation layers requested, but not available!");
     }
     
@@ -30,7 +31,7 @@ void Adren::Renderer::createInstance() {
     instanceInfo.ppEnabledExtensionNames = extensions.data();
     
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (debug) {
+    if (config.debug) {
         instanceInfo.enabledLayerCount = static_cast<uint32_t>(devices.validationLayers.size());
         instanceInfo.ppEnabledLayerNames = devices.validationLayers.data();
 
@@ -46,12 +47,12 @@ void Adren::Renderer::createInstance() {
 }
 
 void Adren::Renderer::initVulkan() {
-    std::cerr << "Initializing program.." << "\n \n" << std::endl;
-    createInstance(); std::cerr << "Instance created.." << "\n \n" << std::endl;
-    debugging.setupDebugMessenger(); std::cerr << "Debug messenger set up.." << "\n \n" << std::endl;
-    display.createSurface(); std::cerr << "Surface created.." << "\n \n" << std::endl;
-    devices.pickPhysicalDevice(); std::cerr << "Physical device chosen.." << "\n \n" << std::endl;
-    devices.createLogicalDevice(); std::cerr << "Logical device created.." << "\n \n" << std::endl;
+    Adren::Tools::log("Initializing program..");
+    createInstance(); Adren::Tools::log("Instance created..");
+    debugging.setupDebugMessenger(); Adren::Tools::log("Debug messenger set up..");
+    display.createSurface(); Adren::Tools::log("Surface created..");
+    devices.pickPhysicalDevice(); Adren::Tools::log("Physical device chosen..");
+    devices.createLogicalDevice(); Adren::Tools::log("Logical device created..");
 
     VmaVulkanFunctions vulkanFunctions{};
     vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
@@ -65,41 +66,33 @@ void Adren::Renderer::initVulkan() {
     allocatorInfo.pVulkanFunctions = &vulkanFunctions;
     vmaCreateAllocator(&allocatorInfo, &allocator);
 
-    swapchain.createSwapChain();  std::cerr << "Swapchain created.." << "\n \n" << std::endl;
-    swapchain.createImageViews(); std::cerr << "Image views created.." << "\n \n" << std::endl;
-    swapchain.createRenderPass(); std::cerr << "Render pass created.." << "\n \n" << std::endl;
-    swapchain.createDescriptorSetLayout(); std::cerr << "Descriptor set layout created.." << "\n \n" << std::endl;
-    swapchain.createGraphicsPipeline(); std::cerr << "Graphics pipeline created.." << "\n \n" << std::endl;
-    processing.createCommands(); std::cerr << "Command pool and buffers created.." << "\n \n" << std::endl;
-    processing.createSyncObjects(); std::cerr << "Sync objects created.." << "\n \n" << std::endl;
-    swapchain.createDepthResources(); std::cerr << "Depth resources created.." << "\n \n" << std::endl;
-    swapchain.createFramebuffers(); std::cerr << "Framebuffers created.." << "\n \n" << std::endl;
-
-    for (auto& model : models) {
-        textures.push_back(processing.createTextureImage(model.texturePath));
-    }
-
-    std::cerr << "Model textures created.." << "\n \n" << std::endl;
-
-    processing.displayModels(); std::cerr << "Models displaying.." << "\n \n" << std::endl;
-    processing.createVertexBuffer(); std::cerr << "Vertex buffers created.." << "\n \n" << std::endl;
-    processing.createIndexBuffer(); std::cerr << "Index buffers created.." << "\n \n" << std::endl;
-    swapchain.createUniformBuffers(); std::cerr << "Uniform buffers created.." << "\n \n" << std::endl;
-    swapchain.createDynamicUniformBuffers(); std::cerr << "Dynamic uniform buffers created.." << "\n \n" << std::endl;
-    swapchain.createDescriptorPool(); std::cerr << "Descriptor pool created.." << "\n \n" << std::endl;
-    swapchain.createDescriptorSets(textures); std::cerr << "Descriptor sets created.." << "\n \n" << std::endl;
+    swapchain.createSwapChain(display.surface); Adren::Tools::log("Swapchain created..");
+    swapchain.createImageViews(); Adren::Tools::log("Image views created..");
+    swapchain.createRenderPass(); Adren::Tools::log("Render pass created..");
+    swapchain.createDescriptorSetLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
+    swapchain.createGraphicsPipeline(); Adren::Tools::log("Graphics pipeline created..");
+    processing.createCommands(display.surface); Adren::Tools::log("Command pool and buffers created..");
+    processing.createSyncObjects(); Adren::Tools::log("Sync objects created..");
+    swapchain.createDepthResources(); Adren::Tools::log("Depth resources created..");
+    swapchain.createFramebuffers(); Adren::Tools::log("Framebuffers created..");
+    processing.loadTextures(textures); Adren::Tools::log("Model textures created..");
+    processing.displayModels(); Adren::Tools::log("Models displaying..");
+    processing.createVertexBuffer(); Adren::Tools::log("Vertex buffers created..");
+    processing.createIndexBuffer(); Adren::Tools::log("Index buffers created..");
+    swapchain.createUniformBuffers(); Adren::Tools::log("Uniform buffers created..");
+    swapchain.createDynamicUniformBuffers(); Adren::Tools::log("Dynamic uniform buffers created..");
+    swapchain.createDescriptorPool(); Adren::Tools::log("Descriptor pool created..");
+    swapchain.createDescriptorSets(textures); Adren::Tools::log("Descriptor sets created..");
 }
 
 void Adren::Renderer::mainLoop() {
     while (!glfwWindowShouldClose(display.window)) {
         glfwPollEvents();
+        static auto startTime = std::chrono::high_resolution_clock::now();
         
-        if (enableGUI) {
-            gui.newImguiFrame();
-            gui.startGUI();
-        }
+        if (config.enableGUI) { gui.newImguiFrame(display.window); gui.startGUI(); }
+        if (camera.toggled) { processing.updateUniformBuffer(); processInput(display.window, camera); }
         processing.drawFrame();
-        processInput();
     }
 
     vkDeviceWaitIdle(devices.device);
@@ -108,23 +101,26 @@ void Adren::Renderer::mainLoop() {
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    if (enableGUI) { gui.initImGui(display.window); }
+    if (config.enableGUI) { gui.initImGui(display.window, display.surface); }
     mainLoop();
     cleanup();
 }
 
 void Adren::Renderer::cleanup() {
-    for (auto& tex : textures) {
-        vkDestroyImageView(devices.device, tex.textureImageView, nullptr);
-        vkDestroyImage(devices.device, tex.texture, nullptr);
-        vkFreeMemory(devices.device, tex.textureImageMemory, nullptr);
-    }
-
-    swapchain.cleanup();
     processing.cleanup();
-    if (enableGUI) { gui.cleanup(); }
+    swapchain.cleanup();
+    if (config.enableGUI) { gui.cleanup(); }
     debugging.cleanup();
     vmaDestroyAllocator(allocator);
+
+    for (auto& m : config.models) {
+        for (auto& tex : m.textures) {
+            vkDestroyImageView(devices.device, tex.textureImageView, nullptr);
+            vkDestroyImage(devices.device, tex.texture, nullptr);
+            vkFreeMemory(devices.device, tex.textureImageMemory, nullptr);
+        }
+    }
+
     devices.cleanup();
 
     glfwDestroyWindow(display.window);
@@ -133,32 +129,33 @@ void Adren::Renderer::cleanup() {
 
     vkDestroyInstance(instance, nullptr);
 }
-void Adren::Renderer::processInput() {
-    if (glfwGetKey(display.window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.pos += 0.05f * camera.front;
+void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
+    float cameraSpeed = 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera.pos += cameraSpeed * camera.front;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.pos -= 0.05f * camera.front;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera.pos -= cameraSpeed * camera.front;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.pos -= glm::normalize(glm::cross(camera.front, camera.up)) * 0.05f;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera.pos -= glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.pos += glm::normalize(glm::cross(camera.front, camera.up)) * 0.05f;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera.pos += glm::normalize(glm::cross(camera.front, camera.up)) * cameraSpeed;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        camera.pos += 0.05f * camera.up;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        camera.pos += cameraSpeed * camera.up;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        camera.pos -= 0.05f * camera.up;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        camera.pos -= cameraSpeed * camera.up;
     }
 
-    if (glfwGetKey(display.window, GLFW_KEY_DELETE) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS) {
         cleanup();
     }
 }

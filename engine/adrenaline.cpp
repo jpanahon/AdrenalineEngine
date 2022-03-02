@@ -8,6 +8,6 @@
 #include "adrenaline.h"
 
 void Adren::Engine::run() {
-	Renderer renderer(config.models, config.debug, config.enableGUI);
+	Renderer renderer(config);
 	renderer.run();
 }

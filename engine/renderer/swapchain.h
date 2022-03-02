@@ -11,13 +11,13 @@
 #include <vector>
 #include "types.h"
 #include "tools.h"
+#include "devices.h"
 
 namespace Adren {
 class Swapchain {
 public:
-    Swapchain(VkDevice& device, VkPhysicalDevice& physicalDevice, VkSurfaceKHR& surface,
-        GLFWwindow* window, int& modelCount, VmaAllocator& allocator) : device(device), physicalDevice(physicalDevice), surface(surface),
-        window(window), modelCount(modelCount), allocator(allocator) {}
+    Swapchain(Devices& devices, GLFWwindow* window, Config& config, VmaAllocator& allocator) : devices(devices), 
+        window(window), config(config), allocator(allocator) {}
 
     void cleanup() {
         vkDestroyImage(device, depthImage, nullptr);
@@ -36,18 +36,18 @@ public:
         vkDestroySwapchainKHR(device, swapChain, nullptr);
         vkDestroySampler(device, sampler, nullptr);
 
-        for (int i = 0; i < swapChainImages.size(); i++) {
-            vmaDestroyBuffer(allocator, uniformBuffers[i].buffer, uniformBuffers[i].alloc);
-            // vmaFreeMemory(allocator, uniformBuffers[i].alloc);
+        vmaDestroyBuffer(allocator, uniformBuffer.buffer, uniformBuffer.alloc);
+        vmaUnmapMemory(allocator, uniformBuffer.alloc);
 
-            vmaDestroyBuffer(allocator, dynamicUniformBuffers[i].buffer, uniformBuffers[i].alloc);
-            // vmaFreeMemory(allocator, dynamicUniformBuffers[i].alloc);
+        for (int i = 0; i < swapChainImages.size(); i++) {
+            vmaDestroyBuffer(allocator, dynamicUniformBuffers[i].buffer, dynamicUniformBuffers[i].alloc);
+            vmaUnmapMemory(allocator, dynamicUniformBuffers[i].alloc);
         }
     }
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-    void createSwapChain();
+    void createSwapChain(VkSurfaceKHR& surface);
     VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
     VkImageView createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags);
@@ -60,7 +60,7 @@ public:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     void createFramebuffers();
     void createGraphicsPipeline();
-    void createDescriptorSetLayout();
+    void createDescriptorSetLayout(std::vector<Model>& models);
     void createDescriptorPool();
     void createDescriptorSets(std::vector<Texture>& textures);
     void createUniformBuffers();
@@ -80,30 +80,30 @@ public:
 
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-    std::vector<Buffer> uniformBuffers;
     std::vector<Buffer> dynamicUniformBuffers;
+
+    Buffer uniformBuffer;
 
     UboDynamicData uboDynamicData;
     VkDeviceSize dynamicAlignment;
 
+    Devices& devices;
     VmaAllocator& allocator;
+    VkDevice& device = devices.device;
+    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    GLFWwindow* window;
+    Config& config;
 private:
-    VkDevice& device;
-    VkPhysicalDevice& physicalDevice;
-    VkSurfaceKHR& surface;
-
     VkFormat swapChainImageFormat;
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 
-    VkDescriptorPool descriptorPool;
-    GLFWwindow* window;
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    VkImage depthImage = VK_NULL_HANDLE;
+    VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
+    VkImageView depthImageView = VK_NULL_HANDLE;
 
     VkSampler sampler;
-    int& modelCount;
 };
 }

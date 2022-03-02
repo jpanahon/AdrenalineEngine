@@ -7,10 +7,9 @@
 
 #include "processing.h"
 #include "tools.h"
-// #include "types.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+//#define STB_IMAGE_IMPLEMENTATION
+//#include <stb/stb_image.h>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -21,10 +20,7 @@ void Adren::Processing::cleanup() {
     if (swapchain.uboDynamicData.model) { Adren::Tools::alignedFree(swapchain.uboDynamicData.model); }
 
     vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.alloc);
-    // vmaFreeMemory(allocator, indexBuffer.alloc);
-    
     vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.alloc);
-    // vmaFreeMemory(allocator, vertexBuffer.alloc);
     
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         vkDestroySemaphore(device, frames[i].rSemaphore, nullptr);
@@ -38,8 +34,8 @@ void Adren::Processing::cleanup() {
 }
 
 void Adren::Processing::createVertexBuffer() {
+    std::cerr << "Vertex Size: " << vertices.size() << "\n \n";
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-    
     Buffer stagingBuffer;
     Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_ONLY);
@@ -86,7 +82,7 @@ void Adren::Processing::createIndexBuffer() {
     vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.alloc);
 }
 
-void Adren::Processing::createCommands() {
+void Adren::Processing::createCommands(VkSurfaceKHR& surface) {
     QueueFamilyIndices queueFamilyIndices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
 
     VkCommandPoolCreateInfo poolInfo{};
@@ -113,49 +109,32 @@ void Adren::Processing::createCommands() {
     Adren::Tools::vibeCheck("CREATED PRIMARY COMMAND POOL", vkCreateCommandPool(device, &primaryPoolInfo, nullptr, &commandPool));
 }
 
-void Adren::Processing::updateUniformBuffer(uint32_t currentImage) {
-    UniformBufferObject ubo{};
-    ubo.view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
-    ubo.proj = glm::perspective(glm::radians(90.0f), (float) swapchain.swapChainExtent.width / (float) swapchain.swapChainExtent.height, 0.1f, 100.0f);
-    ubo.proj[1][1] *= -1;
-
-    void* data;
-    vmaMapMemory(allocator, swapchain.uniformBuffers[currentImage].alloc, &data);
-        memcpy(data, &ubo, sizeof(ubo));
-    vmaUnmapMemory(allocator, swapchain.uniformBuffers[currentImage].alloc);
+void Adren::Processing::updateUniformBuffer() {
+    if (camera.toggled) {
+        UniformBufferObject ubo{};
+        ubo.view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
+        ubo.proj = glm::perspective(glm::radians(110.0f), (float) swapchain.swapChainExtent.width / (float) swapchain.swapChainExtent.height, 0.1f, 10000.0f);
+        ubo.proj[1][1] *= -1;
+        memcpy(swapchain.uniformBuffer.mapped, &ubo, sizeof(ubo));
+    }
 }
 
 void Adren::Processing::updateDynamicUniformBuffer(uint32_t currentImage) {
-    for (uint32_t i = 0; i < models.size(); i++) {
+    for (uint32_t i = 0; i < config.models.size(); i++) {
         glm::mat4* modelMat = (glm::mat4*)(((uint64_t)swapchain.uboDynamicData.model + (i * swapchain.dynamicAlignment)));
+        *modelMat = glm::translate(glm::mat4(1.0f), config.models[i].position);
         
-        if (models[i].player == true ) {
-            *modelMat = glm::translate(glm::mat4(1.0f), camera.pos);
-            *modelMat = glm::rotate(*modelMat, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            *modelMat = glm::scale(*modelMat, glm::vec3(0.5f));
-        } else {
-            *modelMat = glm::translate(glm::mat4(1.0f), models[i].position);
-        }
+        if (config.models[i].rotationAngle != 0.0f) { *modelMat = glm::rotate(*modelMat, glm::radians(config.models[i].rotationAngle), config.models[i].rotationAxis); }
+
+        if (config.models[i].scale != 0.0f) { *modelMat = glm::scale(*modelMat, glm::vec3(config.models[i].scale)); }
+       
     }
 
-    void* data;
-    vmaMapMemory(allocator, swapchain.dynamicUniformBuffers[currentImage].alloc, &data);
-    memcpy(data, swapchain.uboDynamicData.model, swapchain.dynamicAlignment * models.size());
-    /*
-    VkMappedMemoryRange mappedMemoryRange{};
-    mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    mappedMemoryRange.memory = swapchain.dynamicUniformBuffers[currentImage].alloc;
-    mappedMemoryRange.size = swapchain.dynamicAlignment * models.size();
-    vkFlushMappedMemoryRanges(device, 1, &mappedMemoryRange);
-    */
-    vmaUnmapMemory(allocator, swapchain.dynamicUniformBuffers[currentImage].alloc);
+    memcpy(swapchain.dynamicUniformBuffers[currentImage].mapped, swapchain.uboDynamicData.model, swapchain.dynamicAlignment * config.models.size());
 }
 
 void Adren::Processing::displayModels() {
-    for (auto &model : models) {
-        vertexCounts.push_back(model.vertices.size());
-        indexCounts.push_back(model.indices.size());
-
+    for (auto &model : config.models) {
         indices.insert(indices.end(), model.indices.begin(),  model.indices.end());
         vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
     }
@@ -177,26 +156,6 @@ void Adren::Processing::createSyncObjects() {
         }
     }
 }
-
-/*
-void Adren::Processing::recreateSwapChain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
-  
-    vkDeviceWaitIdle(device);
-
-    swapchain.cleanupSwapChain();
- 
-    swapchain.createSwapChain();
-  
-    swapchain.createImageViews();
- 
-    swapchain.createFramebuffers();
-}*/
 
 void Adren::Processing::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
     VkCommandBuffer commandBuffer = Adren::Tools::beginSingleTimeCommands(device, commandPool);
@@ -262,47 +221,38 @@ void Adren::Processing::transitionImageLayout(VkImage image, VkFormat format, Vk
     Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
 }
 
-Texture Adren::Processing::createTextureImage(std::string TEXTURE_PATH) {
-    int texWidth = 0;
-    int texHeight = 0;
-    int texChannels = 0;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
+void Adren::Processing::loadTextures(std::vector<Texture>& textures) {
+    for (Model model : config.models) {
+        for (size_t t = 0; t < model.textures.size(); t++) {
+            Texture texture = model.textures[t];
+            Model::Image image = model.images[t];
 
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
+            Buffer stagingBuffer = {};
+            Adren::Tools::createBuffer(allocator, image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_ONLY);
+
+            uint8_t* data;
+            vmaMapMemory(allocator, stagingBuffer.alloc, (void**)&data);
+            memcpy(data, image.buffer, image.bufferSize);
+            vmaUnmapMemory(allocator, stagingBuffer.alloc);
+            
+            texture.texture = swapchain.createImage(image.width, image.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.textureImageMemory);
+
+            transitionImageLayout(texture.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyBufferToImage(stagingBuffer.buffer, texture.texture, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height));
+            transitionImageLayout(texture.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.alloc);
+
+            texture.textureImageView = swapchain.createImageView(texture.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+            textures.push_back(texture);
+        }
     }
-
-    Buffer stagingBuffer = {};
-    Adren::Tools::createBuffer(allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, VMA_MEMORY_USAGE_CPU_ONLY);
-
-    void* data;
-    vmaMapMemory(allocator, stagingBuffer.alloc, &data);
-        memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vmaUnmapMemory(allocator, stagingBuffer.alloc);
-
-    stbi_image_free(pixels);
-
-    Texture tex;
-
-    tex.texture = swapchain.createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-        VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.textureImageMemory);
-
-    transitionImageLayout(tex.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(stagingBuffer.buffer, tex.texture, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    transitionImageLayout(tex.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.alloc);
-    // vmaFreeMemory(allocator, stagingBuffer.alloc);
-
-    tex.textureImageView = swapchain.createImageView(tex.texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    return tex;
 }
 
 void Adren::Processing::drawFrame() {
-    if (enableGUI) { ImGui::Render(); }
+    if (config.enableGUI) { ImGui::Render(); }
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
     vkWaitForFences(device, 1, &frames[currentFrame].fence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &frames[currentFrame].fence);
@@ -314,7 +264,7 @@ void Adren::Processing::drawFrame() {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    beginInfo.pInheritanceInfo = nullptr; 
+    beginInfo.pInheritanceInfo = nullptr;
 
     //vkResetCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
     vkResetCommandPool(device, frames[currentFrame].commandPool, 0);
@@ -323,12 +273,12 @@ void Adren::Processing::drawFrame() {
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = swapchain.renderPass;
     renderPassInfo.framebuffer = swapchain.swapChainFramebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = swapchain.swapChainExtent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {0.53f, 0.81f, 0.92f, 0.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
+    clearValues[0].color = { 0.119f, 0.181f, 0.254f, 0.0f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
@@ -343,31 +293,33 @@ void Adren::Processing::drawFrame() {
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapchain.graphicsPipeline);
 
-    VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
-    VkDeviceSize offsets[] = {0};
+    VkBuffer vertexBuffers[] = { vertexBuffer.buffer };
+    VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     uint32_t firstIndex = 0;
     uint32_t vertexOffset = 0;
-    for (int j = 0; j < indexCounts.size(); j++) {
+
+    for (int j = 0; j < config.models.size(); j++) {
         uint32_t dynamicOffset = j * static_cast<uint32_t>(swapchain.dynamicAlignment);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapchain.pipelineLayout, 0, 1, 
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapchain.pipelineLayout, 0, 1,
             &swapchain.descriptorSets[imageIndex], 1, &dynamicOffset);
 
-        vkCmdPushConstants(commandBuffer, swapchain.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &j);
-        vkCmdDrawIndexed(commandBuffer, indexCounts[j], 1, firstIndex, vertexOffset, 0);
-
-        firstIndex += indexCounts[j];
-        vertexOffset += vertexCounts[j];
+        for (const Model::Primitive& p : config.models[j].primitives) {
+            Texture texture = config.models[j].textures[config.models[j].materials[p.materialIndex].baseColorTextureIndex];
+            vkCmdPushConstants(commandBuffer, swapchain.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &texture.imageIndex);
+            vkCmdDrawIndexed(commandBuffer, p.indexCount, 1, firstIndex, vertexOffset, 0);
+            firstIndex += p.indexCount;
+            vertexOffset += p.vertexCount;
+        }
     }
-    
-    if (enableGUI) { ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer); }
+
+    if (config.enableGUI) { ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer); }
     vkCmdEndRenderPass(commandBuffer);
 
     vkEndCommandBuffer(commandBuffer);
 
-    updateUniformBuffer(imageIndex);
     updateDynamicUniformBuffer(imageIndex);
     
     VkSubmitInfo submitInfo{};

@@ -8,6 +8,13 @@
 #include "display.h"
 #include <iostream>
 
+//#ifdef _WIN32
+//    #include <Windows.h>
+//    #include <Uxtheme.h>
+//    #define GLFW_EXPOSE_NATIVE_WIN32
+//    #include <GLFW/glfw3native.h>
+//#endif
+
 void Adren::Display::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     auto app = reinterpret_cast<Display*>(glfwGetWindowUserPointer(window));
 
@@ -38,7 +45,12 @@ void Adren::Display::mouse_callback(GLFWwindow* window, double xpos, double ypos
     direction.x = cos(glm::radians(app->yaw)) * cos(glm::radians(app->pitch));
     direction.y = sin(glm::radians(app->pitch));
     direction.z = sin(glm::radians(app->yaw)) * cos(glm::radians(app->pitch));
-    app->camera.front = glm::normalize(direction);
+    if (app->camera.toggled) {
+        app->camera.front = glm::normalize(direction);
+        app->camera.lastX = app->lastX;
+        app->camera.lastY = app->lastY;
+    }
+    
 }
 
 void Adren::Display::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -58,11 +70,18 @@ void Adren::Display::initWindow() {
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     windowHeight = mode->height;
     windowWidth = mode->width;
+    camera.height = windowHeight;
+    camera.width = windowWidth;
 
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+//#ifdef _WIN32
+//    HWND win32window = glfwGetWin32Window(window);
+//    SetWindowTheme(win32window, L"DarkMode_Explorer", NULL);
+//#endif
 }
 
 void Adren::Display::createSurface() {

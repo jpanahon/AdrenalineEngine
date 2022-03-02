@@ -21,31 +21,28 @@ class Model;
 
 class Renderer {
 public:
-    Renderer(std::vector<Model>& models, bool& debug, bool& enableGUI) : models(models), debug(debug), enableGUI(enableGUI) {}
+    Renderer(Config& config) : config(config) {}
 
     void run();
 private:
     void createInstance();
     void initVulkan();
-    void processInput();
+    void processInput(GLFWwindow* window, Camera& camera);
     void mainLoop();
     void cleanup();
 
-    std::vector<Model>& models;
+    Config& config;
     std::vector<Texture> textures;
-    bool& enableGUI;
-    int modelCount = models.size();
-
+    
     VkInstance instance;
-    bool& debug;
     Camera camera;
     VmaAllocator allocator;
     
     Display display{instance, camera};
-    Devices devices{debug, instance, display.surface};
-    Debugger debugging{debug, instance};
-    Swapchain swapchain{devices.device, devices.physicalDevice, display.surface, display.window, modelCount, allocator};
-    Processing processing{swapchain, devices.device, devices.physicalDevice, models, devices.graphicsQueue, devices.presentQueue, display.surface, display.window, camera, enableGUI, allocator};
-    GUI gui{devices.device, instance, devices.physicalDevice, devices.graphicsQueue, swapchain.swapChainImages, swapchain.renderPass, processing.commandPool, display.surface, display.window};
+    Devices devices{config.debug, instance, display.surface};
+    Debugger debugging{config.debug, instance};
+    Swapchain swapchain{devices, display.window, config, allocator};
+    Processing processing{swapchain, camera};
+    GUI gui{processing, instance};
 };
 }

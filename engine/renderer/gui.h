@@ -10,31 +10,34 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
+#include "types.h"
+#include "processing.h"
 
 namespace Adren {
 class GUI {
 public:
-    GUI(VkDevice& device, VkInstance& instance, VkPhysicalDevice& physicalDevice, VkQueue& graphicsQueue,
-        std::vector<VkImage>& swapChainImages, VkRenderPass& renderPass, VkCommandPool& commandPool,
-        VkSurfaceKHR& surface, GLFWwindow* window) : device(device), instance(instance), physicalDevice(physicalDevice),
-        graphicsQueue(graphicsQueue), swapChainImages(swapChainImages), renderPass(renderPass),
-        commandPool(commandPool), surface(surface), window(window) {}
+    GUI(Processing& processing, VkInstance& instance) : processing(processing), instance(instance) {}
 
-    void initImGui(GLFWwindow* window);
+    void initImGui(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
-    void newImguiFrame();
+    void mouseHandler(GLFWwindow* window);
+    void newImguiFrame(GLFWwindow* window);
     void startGUI();
 private:
+    void cameraInfo();
+    void guiStyle();
+
+    Processing& processing;
     VkDescriptorPool imguiPool = VK_NULL_HANDLE;
-    VkDevice& device;
+    VkDevice& device = processing.device;
     VkInstance& instance;
-    VkQueue& graphicsQueue;
-    VkPhysicalDevice& physicalDevice;
-    VkRenderPass& renderPass;
-    std::vector<VkImage>& swapChainImages;
-    VkCommandPool& commandPool;
-    VkSurfaceKHR& surface;
-    GLFWwindow* window;
-    bool demoWindow = true;
+    VkQueue& graphicsQueue = processing.graphicsQueue;
+    VkPhysicalDevice& physicalDevice = processing.physicalDevice;
+    VkRenderPass& renderPass = processing.swapchain.renderPass;
+    std::vector<VkImage>& swapChainImages = processing.swapchain.swapChainImages;
+    VkCommandPool& commandPool = processing.commandPool;
+    Camera& camera = processing.camera;
+
+    bool rightClick = false;
 };
 }
