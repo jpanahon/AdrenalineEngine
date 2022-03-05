@@ -44,7 +44,7 @@ void Adren::Debugger::setupDebugMessenger() {
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Debugger::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
     VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-    std::cerr << pCallbackData->pMessage << "\n \n";
+    Adren::Tools::log(pCallbackData->pMessage);
     
     return VK_FALSE;
 }

@@ -380,7 +380,6 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
 
         VkDescriptorImageInfo samplerInfo{};
         samplerInfo.sampler = sampler;
-        std::cerr << "Texture Size: " << textureSize << "\n \n";
         VkDescriptorImageInfo* imageInfo;
         imageInfo = new VkDescriptorImageInfo[textureSize];
         for (uint32_t f = 0; f < textureSize; f++) {
@@ -388,9 +387,6 @@ void Adren::Swapchain::createDescriptorSets(std::vector<Texture>& textures) {
             imageInfo[f].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[f].imageView = textures[f].textureImageView;
         }
-
-        uint32_t counts[1];
-        counts[0] = textureSize;
 
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 
@@ -445,12 +441,10 @@ void Adren::Swapchain::createDynamicUniformBuffers() {
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     VkDeviceSize minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
     dynamicAlignment = sizeof(glm::mat4);
-    std::cerr << "MinUboAlignment:  " << minUboAlignment << "\n \n";
     if (minUboAlignment > 0) {
         dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
 
-    std::cout << "Model Count: " << config.models.size() << "\n \n";
     VkDeviceSize bufferSize = config.models.size() * dynamicAlignment;
     uboDynamicData.model = (glm::mat4*)Adren::Tools::alignedAlloc(bufferSize, dynamicAlignment);
     assert(uboDynamicData.model);

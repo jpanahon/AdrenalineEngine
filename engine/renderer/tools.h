@@ -22,13 +22,15 @@ inline void vibeCheck(std::string name, VkResult x) {
     if (x != VK_SUCCESS) {
         std::cout << "VULKAN ERROR FOR " << name << ": " << x << "\n \n" << std::endl;
         abort();
-    } else {
-        std::cout << name << " PASSES THE VIBE CHECK! \n \n" << std::endl;
-    }
+    } 
 }
 
 inline void log(std::string log) {
     std::cerr << log << "\n \n" << std::endl;
+}
+
+inline void checkSize(std::string log, size_t size) {
+    std::cerr << log << size << "\n \n" << std::endl;
 }
 
 inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR& surface) {

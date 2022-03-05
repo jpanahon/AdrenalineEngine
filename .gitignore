@@ -21,3 +21,4 @@ imgui.ini
 /lib/glfw
 /windows-default
 /.vs
+/engine/resources/models

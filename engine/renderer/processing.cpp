@@ -34,7 +34,6 @@ void Adren::Processing::cleanup() {
 }
 
 void Adren::Processing::createVertexBuffer() {
-    std::cerr << "Vertex Size: " << vertices.size() << "\n \n";
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
     Buffer stagingBuffer;
     Adren::Tools::createBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -135,6 +134,7 @@ void Adren::Processing::updateDynamicUniformBuffer(uint32_t currentImage) {
 
 void Adren::Processing::displayModels() {
     for (auto &model : config.models) {
+        Adren::Tools::checkSize("Model Vertex Size: ", model.vertices.size());
         indices.insert(indices.end(), model.indices.begin(),  model.indices.end());
         vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
     }
@@ -300,18 +300,12 @@ void Adren::Processing::drawFrame() {
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     uint32_t firstIndex = 0;
     uint32_t vertexOffset = 0;
-
-    for (int j = 0; j < config.models.size(); j++) {
-        uint32_t dynamicOffset = j * static_cast<uint32_t>(swapchain.dynamicAlignment);
+    for (int m = 0; m < config.models.size(); m++) {
+        uint32_t dynamicOffset = m * static_cast<uint32_t>(swapchain.dynamicAlignment);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapchain.pipelineLayout, 0, 1,
             &swapchain.descriptorSets[imageIndex], 1, &dynamicOffset);
-
-        for (const Model::Primitive& p : config.models[j].primitives) {
-            Texture texture = config.models[j].textures[config.models[j].materials[p.materialIndex].baseColorTextureIndex];
-            vkCmdPushConstants(commandBuffer, swapchain.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &texture.imageIndex);
-            vkCmdDrawIndexed(commandBuffer, p.indexCount, 1, firstIndex, vertexOffset, 0);
-            firstIndex += p.indexCount;
-            vertexOffset += p.vertexCount;
+        for (auto& node : config.models[m].nodes) {
+            config.models[m].drawNode(commandBuffer, swapchain.pipelineLayout, node, firstIndex, vertexOffset);
         }
     }
 

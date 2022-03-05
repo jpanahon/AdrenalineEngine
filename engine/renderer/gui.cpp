@@ -108,17 +108,18 @@ void Adren::GUI::newImguiFrame(GLFWwindow* window) {
 }
 
 void Adren::GUI::startGUI() {
-    bool demo = true;
-    ImGui::ShowDemoWindow(&demo);
+    //bool demo = true;
+    //ImGui::ShowDemoWindow(&demo);
     cameraInfo();
+    renderInfo();
 }
 
 void Adren::GUI::cameraInfo() {
-    std::string cameraFront = "Camera Front: " + glm::to_string(camera.front) + "\n \n";
-    std::string cameraPos = "Camera Position: " + glm::to_string(camera.pos) + "\n \n";
-    std::string cameraUp = "Camera Up: " + glm::to_string(camera.up) + "\n \n";
-    std::string cameraLastX = "Camera Last X: " + std::to_string(camera.lastX) + "\n \n";
-    std::string cameraLastY = "Camera Last Y: " + std::to_string(camera.lastY) + "\n \n";
+    std::string cameraFront = "Front: " + glm::to_string(camera.front) + "\n \n";
+    std::string cameraPos = "Position: " + glm::to_string(camera.pos) + "\n \n";
+    std::string cameraUp = "Up: " + glm::to_string(camera.up) + "\n \n";
+    std::string cameraLastX = "Last X: " + std::to_string(camera.lastX) + "\n \n";
+    std::string cameraLastY = "Last Y: " + std::to_string(camera.lastY) + "\n \n";
 
     ImGui::Begin("Camera Properties", false);
     ImGui::Text(cameraFront.c_str());
@@ -126,6 +127,29 @@ void Adren::GUI::cameraInfo() {
     ImGui::Text(cameraUp.c_str());
     ImGui::Text(cameraLastX.c_str());
     ImGui::Text(cameraLastY.c_str());
+    ImGui::End();
+}
+
+void Adren::GUI::renderInfo() {
+    size_t vertices = 0;
+    size_t indices = 0;
+    size_t textures = 0;
+    for (const auto& model : processing.swapchain.config.models) {
+        vertices += model.vertices.size();
+        indices += model.indices.size();
+        textures += model.textures.size();
+    }
+
+    std::string modelVertices = "All Vertices: " + std::to_string(vertices) + "\n \n";
+    std::string modelIndices = "All Indices: " + std::to_string(indices) + "\n \n";
+    std::string modelCount = "Number of Models: " + std::to_string(processing.swapchain.config.models.size()) + "\n \n";
+    std::string modelTextures = "Number of Textures: " + std::to_string(textures) + "\n \n";
+
+    ImGui::Begin("Rendering Information", false);
+    ImGui::Text(modelVertices.c_str());
+    ImGui::Text(modelIndices.c_str());
+    ImGui::Text(modelCount.c_str());
+    ImGui::Text(modelTextures.c_str());
     ImGui::End();
 }
 

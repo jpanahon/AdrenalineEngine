@@ -25,6 +25,7 @@ public:
     void startGUI();
 private:
     void cameraInfo();
+    void renderInfo();
     void guiStyle();
 
     Processing& processing;

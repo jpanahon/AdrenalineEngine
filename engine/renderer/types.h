@@ -130,7 +130,8 @@ struct Camera {
     int width;
 };
 
-struct Model {
+class Model {
+public:
     Model(std::string modelPath);
 
     std::vector<Texture> textures;
@@ -139,6 +140,8 @@ struct Model {
     glm::vec3 rotationAxis = ADREN_Y_AXIS;
 
     float scale = 0.0f;
+    
+    struct Node;
 
     struct Primitive {
         uint32_t firstIndex;
@@ -146,12 +149,12 @@ struct Model {
         uint32_t indexCount;
         uint32_t vertexCount;
         int32_t materialIndex;
-    } primitive;
+    };
 
     struct Material {
         glm::vec4 baseColorFactor = glm::vec4(1.0f);
-        uint32_t baseColorTextureIndex;
-    } material;
+        uint32_t baseColorTextureIndex = 0;
+    };
 
     struct Image {
         unsigned char* buffer = nullptr;
@@ -159,14 +162,34 @@ struct Model {
 
         int height;
         int width;
-    } image;
+    };
 
-    tinygltf::Model model;
-    std::vector<Primitive> primitives;
+    struct Mesh {
+        std::vector<Primitive> primitives;
+    };
+
+    struct Node {
+        Node* parent;
+        std::vector<Node> children;
+        Mesh mesh;
+        glm::mat4 matrix;
+    };
+
+    tinygltf::Model gltf;
+    std::vector<Node> nodes;
     std::vector<Material> materials;
     std::vector<Image> images;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
+    void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, uint32_t& findIndex, uint32_t& vertexOffset);
+private:
+    void fillTextures(tinygltf::Model& model);
+    void fillMaterials(tinygltf::Model& model);
+    void fillImages(tinygltf::Model& model);
+    void fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, Node* parent);
+    void findComponent(const tinygltf::Accessor& accessor, const tinygltf::Buffer& buffer, 
+        const tinygltf::BufferView& view);
+    tinygltf::Accessor Model::getAccessor(const tinygltf::Model& model, const tinygltf::Primitive& prim, std::string attribute);
 };
 
 struct Buffer {
