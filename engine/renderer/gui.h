@@ -16,7 +16,8 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(Processing& processing, VkInstance& instance) : processing(processing), instance(instance) {}
+    GUI(Devices& devices, Buffers& buffers, Swapchain& swapchain, Processing& processing, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
+        buffers(buffers), swapchain(swapchain), processing(processing), instance(instance), camera(camera), config(config) {}
 
     void initImGui(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
@@ -28,16 +29,21 @@ private:
     void renderInfo();
     void guiStyle();
 
+    Devices& devices;
+    Buffers& buffers;
+    Swapchain& swapchain;
     Processing& processing;
+    Config& config;
+    Camera& camera;
+
     VkDescriptorPool imguiPool = VK_NULL_HANDLE;
-    VkDevice& device = processing.device;
+    VkDevice& device = devices.device;
     VkInstance& instance;
-    VkQueue& graphicsQueue = processing.graphicsQueue;
-    VkPhysicalDevice& physicalDevice = processing.physicalDevice;
-    VkRenderPass& renderPass = processing.swapchain.renderPass;
-    std::vector<VkImage>& swapChainImages = processing.swapchain.swapChainImages;
+    VkQueue& graphicsQueue = devices.graphicsQueue;
+    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    VkRenderPass& renderPass = swapchain.renderPass;
+    std::vector<VkImage>& swapChainImages = swapchain.images;
     VkCommandPool& commandPool = processing.commandPool;
-    Camera& camera = processing.camera;
 
     bool rightClick = false;
 };

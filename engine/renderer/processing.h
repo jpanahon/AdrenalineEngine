@@ -7,57 +7,34 @@
 
 #pragma once
 #include "swapchain.h"
+#include "buffers.h"
+#include "pipeline.h"
+#include "descriptor.h"
 
 namespace Adren {
 class Processing {
 public:
-    Processing(Swapchain& swapchain, Camera& camera) : swapchain(swapchain), camera(camera) {}
-    void createVertexBuffer();
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-    void createIndexBuffer();
+    Processing(Devices& devices, Camera& camera, Config& config, GLFWwindow* window) : devices(devices), camera(camera), config(config), window(window) {}
     void createCommands(VkSurfaceKHR& surface);
-    void updateUniformBuffer();
-    void updateDynamicUniformBuffer(uint32_t currentImage);
-    void displayModels();
     void createSyncObjects();
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void loadTextures(std::vector<Texture>& textures);
-    void drawFrame();
+    void render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain);
     void cleanup();
-    
-    Swapchain& swapchain;
+   
     VkCommandPool commandPool = VK_NULL_HANDLE;
-    VkDevice& device = swapchain.devices.device;
-    VkPhysicalDevice& physicalDevice = swapchain.devices.physicalDevice;
-    VkQueue& graphicsQueue = swapchain.devices.graphicsQueue;
-    VkQueue& presentQueue = swapchain.devices.presentQueue;
-
-    GLFWwindow* window = swapchain.window;
-    Camera& camera;
 private:
-
-    Config& config = swapchain.config;
+    GLFWwindow* window;
+    Camera& camera;
+    Config& config;
+    Devices& devices;
+    VkDevice& device = devices.device;
+    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    VkQueue& graphicsQueue = devices.graphicsQueue;
+    VkQueue& presentQueue = devices.presentQueue;
     size_t currentFrame = 0;
     std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
 
-    std::vector<VkDeviceSize> indexCounts;
-    std::vector<VkDeviceSize> vertexCounts;
-
-    Buffer vertexBuffer;
-    
-    Buffer indexBuffer;
-
-    VmaAllocator& allocator = swapchain.allocator;
-
-    static constexpr int maxFramesInFlight = 3;
+    static const int maxFramesInFlight = 3;
 
     Frame frames[maxFramesInFlight];
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-    std::vector<VkFence> imagesInFlight;
 };
 }

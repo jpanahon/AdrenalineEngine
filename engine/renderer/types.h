@@ -21,7 +21,6 @@
 #include <optional>
 #include <array>
 #include "vk_mem_alloc.h"
-#include <tinygltf/tiny_gltf.h>
 
 #define ADREN_X_AXIS glm::vec3(1.0f, 0.0f, 0.0f)
 #define ADREN_Y_AXIS glm::vec3(0.0f, 1.0f, 0.0f)
@@ -32,7 +31,6 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
-    glm::vec3 normal;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -97,13 +95,6 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct Texture {
-    VkImage texture;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    int32_t imageIndex;
-};
-
 struct UboDynamicData {
     glm::mat4 *model = nullptr;
 };
@@ -130,73 +121,19 @@ struct Camera {
     int width;
 };
 
-class Model {
-public:
-    Model(std::string modelPath);
-
-    std::vector<Texture> textures;
-    glm::vec3 position = glm::vec3(0.0f);
-    float rotationAngle = 0.0f;
-    glm::vec3 rotationAxis = ADREN_Y_AXIS;
-
-    float scale = 0.0f;
-    
-    struct Node;
-
-    struct Primitive {
-        uint32_t firstIndex;
-        uint32_t firstVertex;
-        uint32_t indexCount;
-        uint32_t vertexCount;
-        int32_t materialIndex;
-    };
-
-    struct Material {
-        glm::vec4 baseColorFactor = glm::vec4(1.0f);
-        uint32_t baseColorTextureIndex = 0;
-    };
-
-    struct Image {
-        unsigned char* buffer = nullptr;
-        VkDeviceSize bufferSize = 0;
-
-        int height;
-        int width;
-    };
-
-    struct Mesh {
-        std::vector<Primitive> primitives;
-    };
-
-    struct Node {
-        Node* parent;
-        std::vector<Node> children;
-        Mesh mesh;
-        glm::mat4 matrix;
-    };
-
-    tinygltf::Model gltf;
-    std::vector<Node> nodes;
-    std::vector<Material> materials;
-    std::vector<Image> images;
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, uint32_t& findIndex, uint32_t& vertexOffset);
-private:
-    void fillTextures(tinygltf::Model& model);
-    void fillMaterials(tinygltf::Model& model);
-    void fillImages(tinygltf::Model& model);
-    void fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, Node* parent);
-    void findComponent(const tinygltf::Accessor& accessor, const tinygltf::Buffer& buffer, 
-        const tinygltf::BufferView& view);
-    tinygltf::Accessor Model::getAccessor(const tinygltf::Model& model, const tinygltf::Primitive& prim, std::string attribute);
+struct Offset {
+    uint32_t firstIndex = 0;
+    uint32_t vertexOffset = 0;
+    uint32_t textureOffset = 0;
 };
 
 struct Buffer {
     VkBuffer buffer;
-    VmaAllocation alloc;
+    VmaAllocation memory;
     void* mapped;
 };
+
+class Model;
 
 struct Config {
     std::vector<Model> models;
@@ -204,7 +141,9 @@ struct Config {
     bool enableGUI = true;
 };
 
-/*struct Image {
+struct Image {
     VkImage image;
-    VmaAllocation alloc;
-};*/
+    VmaAllocation memory;
+    VkImageView view;
+    VkFormat format;
+};

@@ -10,7 +10,7 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STBI_MSC_SECURE_CRT
 
-#include "types.h"
+#include "model.h"
 #include <glm/gtc/type_ptr.hpp>
 
 Model::Model(std::string modelPath) {
@@ -44,7 +44,7 @@ Model::Model(std::string modelPath) {
 void Model::fillTextures(tinygltf::Model& model) {
     textures.resize(model.textures.size());
     for (size_t t = 0; t < model.textures.size(); t++) {
-        textures[t].imageIndex = model.textures[t].source;
+        textures[t].index = model.textures[t].source;
     }
 }
 
@@ -96,10 +96,7 @@ tinygltf::Accessor Model::getAccessor(const tinygltf::Model& model, const tinygl
     return model.accessors[prim.attributes.find(attribute)->second];
 }
 
-void Model::findComponent(const tinygltf::Accessor& accessor, const tinygltf::Buffer& buffer, 
-    const tinygltf::BufferView& view) {
-
-    //uint32_t offset = static_cast<uint32_t>(vertices.size());;
+void Model::findComponent(const tinygltf::Accessor& accessor, const tinygltf::Buffer& buffer, const tinygltf::BufferView& view) {
     switch (accessor.componentType) {
     case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
         const uint32_t* index = reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + view.byteOffset]);
@@ -208,20 +205,21 @@ void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, 
     }
 }
 
-void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, uint32_t& firstIndex, uint32_t& vertexOffset) {
+void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, Offset& offset) {
     if (iNode.mesh.primitives.size() > 0) {
         for (Model::Primitive& prim : iNode.mesh.primitives) {
             if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
-                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &texture.imageIndex);
-                vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, firstIndex, vertexOffset, 0);
-                firstIndex += prim.indexCount;
-                vertexOffset += prim.vertexCount;
+                const auto index = texture.index + offset.textureOffset;
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
+                vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.firstIndex, offset.vertexOffset, 0);
+                offset.firstIndex += prim.indexCount;
+                offset.vertexOffset += prim.vertexCount;
             }
         }
     }
 
     for (auto& child : iNode.children) {
-        drawNode(commandBuffer, pipelineLayout, child, firstIndex, vertexOffset);
+        drawNode(commandBuffer, pipelineLayout, child, offset);
     }
 }

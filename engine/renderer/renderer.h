@@ -9,16 +9,18 @@
 #include <iostream>
 #include <vector>
 
-#include "processing.h"
+#include "model.h"
+//#include "descriptor.h"
+//#include "processing.h"
 #include "display.h"
-#include "devices.h" 
+//#include "pipeline.h"
+// #include "images.h"
+// #include "devices.h" 
+// #include "buffers.h"
 #include "debugging.h"
 #include "gui.h"
 
 namespace Adren {
-
-class Model;
-
 class Renderer {
 public:
     Renderer(Config& config) : config(config) {}
@@ -32,7 +34,7 @@ private:
     void cleanup();
 
     Config& config;
-    std::vector<Texture> textures;
+    std::vector<Model::Texture> textures;
     
     VkInstance instance;
     Camera camera;
@@ -41,8 +43,12 @@ private:
     Display display{instance, camera};
     Devices devices{config.debug, instance, display.surface};
     Debugger debugging{config.debug, instance};
-    Swapchain swapchain{devices, display.window, config, allocator};
-    Processing processing{swapchain, camera};
-    GUI gui{processing, instance};
+    Buffers buffers{devices};
+    Swapchain swapchain{devices, display.window, config};
+    Images images{config, devices, buffers};
+    Descriptor descriptor{devices, buffers};
+    Pipeline pipeline{devices};
+    Processing processing{ devices, camera, config, display.window };
+    GUI gui{devices, buffers, swapchain, processing, instance, camera, config};
 };
 }

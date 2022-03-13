@@ -53,36 +53,21 @@ void Adren::Renderer::initVulkan() {
     display.createSurface(); Adren::Tools::log("Surface created..");
     devices.pickPhysicalDevice(); Adren::Tools::log("Physical device chosen..");
     devices.createLogicalDevice(); Adren::Tools::log("Logical device created..");
-
-    VmaVulkanFunctions vulkanFunctions{};
-    vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-    vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
-
-    VmaAllocatorCreateInfo allocatorInfo{};
-    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
-    allocatorInfo.physicalDevice = devices.physicalDevice;
-    allocatorInfo.device = devices.device;
-    allocatorInfo.instance = instance;
-    allocatorInfo.pVulkanFunctions = &vulkanFunctions;
-    vmaCreateAllocator(&allocatorInfo, &allocator);
-
-    swapchain.createSwapChain(display.surface); Adren::Tools::log("Swapchain created..");
-    swapchain.createImageViews(); Adren::Tools::log("Image views created..");
-    swapchain.createRenderPass(); Adren::Tools::log("Render pass created..");
-    swapchain.createDescriptorSetLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
-    swapchain.createGraphicsPipeline(); Adren::Tools::log("Graphics pipeline created..");
+    devices.createAllocator(); Adren::Tools::log("Memory allocator created..");
+    swapchain.create(display.surface); Adren::Tools::log("Swapchain created..");
+    swapchain.createImageViews(images); Adren::Tools::log("Image views created..");
+    swapchain.createRenderPass(images.depth); Adren::Tools::log("Render pass created..");
+    descriptor.createLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
+    pipeline.create(swapchain, descriptor.layout); Adren::Tools::log("Graphics pipeline created..");
     processing.createCommands(display.surface); Adren::Tools::log("Command pool and buffers created..");
     processing.createSyncObjects(); Adren::Tools::log("Sync objects created..");
-    swapchain.createDepthResources(); Adren::Tools::log("Depth resources created..");
-    swapchain.createFramebuffers(); Adren::Tools::log("Framebuffers created..");
-    processing.loadTextures(textures); Adren::Tools::log("Model textures created..");
-    processing.displayModels(); Adren::Tools::log("Models displaying..");
-    processing.createVertexBuffer(); Adren::Tools::log("Vertex buffers created..");
-    processing.createIndexBuffer(); Adren::Tools::log("Index buffers created..");
-    swapchain.createUniformBuffers(); Adren::Tools::log("Uniform buffers created..");
-    swapchain.createDynamicUniformBuffers(); Adren::Tools::log("Dynamic uniform buffers created..");
-    swapchain.createDescriptorPool(); Adren::Tools::log("Descriptor pool created..");
-    swapchain.createDescriptorSets(textures); Adren::Tools::log("Descriptor sets created..");
+    images.createDepthResources(swapchain.extent); Adren::Tools::log("Depth resources created..");
+    swapchain.createFramebuffers(images.depth); Adren::Tools::log("Framebuffers created..");
+    images.loadTextures(textures, processing.commandPool); Adren::Tools::log("Model textures created..");
+    buffers.createModelBuffers(config.models, processing.commandPool); Adren::Tools::log("Index buffers created..");
+    buffers.createUniformBuffers(swapchain.images, config.models); Adren::Tools::log("Uniform buffers created..");
+    descriptor.createPool(swapchain.images); Adren::Tools::log("Descriptor pool created..");
+    descriptor.createSets(textures, swapchain.images); Adren::Tools::log("Descriptor sets created..");
 }
 
 void Adren::Renderer::mainLoop() {
@@ -91,8 +76,8 @@ void Adren::Renderer::mainLoop() {
         static auto startTime = std::chrono::high_resolution_clock::now();
         
         if (config.enableGUI) { gui.newImguiFrame(display.window); gui.startGUI(); }
-        if (camera.toggled) { processing.updateUniformBuffer(); processInput(display.window, camera); }
-        processing.drawFrame();
+        if (camera.toggled) { buffers.updateUniformBuffer(camera, swapchain.extent); processInput(display.window, camera); }
+        processing.render(buffers, pipeline, descriptor, swapchain);
     }
 
     vkDeviceWaitIdle(devices.device);
@@ -111,13 +96,11 @@ void Adren::Renderer::cleanup() {
     swapchain.cleanup();
     if (config.enableGUI) { gui.cleanup(); }
     debugging.cleanup();
-    vmaDestroyAllocator(allocator);
 
     for (auto& m : config.models) {
         for (auto& tex : m.textures) {
-            vkDestroyImageView(devices.device, tex.textureImageView, nullptr);
-            vkDestroyImage(devices.device, tex.texture, nullptr);
-            vkFreeMemory(devices.device, tex.textureImageMemory, nullptr);
+            vkDestroyImageView(devices.device, tex.view, nullptr);
+            vmaDestroyImage(allocator, tex.image, tex.memory);
         }
     }
 

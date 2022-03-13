@@ -56,8 +56,8 @@ void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
     init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = imguiPool;
     init_info.Allocator = VK_NULL_HANDLE;
-    init_info.MinImageCount = swapChainImages.size();
-    init_info.ImageCount = swapChainImages.size();
+    init_info.MinImageCount = swapchain.images.size();
+    init_info.ImageCount = swapchain.images.size();
     init_info.CheckVkResultFn = NULL;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     ImGui_ImplVulkan_Init(&init_info, renderPass);
@@ -134,7 +134,7 @@ void Adren::GUI::renderInfo() {
     size_t vertices = 0;
     size_t indices = 0;
     size_t textures = 0;
-    for (const auto& model : processing.swapchain.config.models) {
+    for (const auto& model : config.models) {
         vertices += model.vertices.size();
         indices += model.indices.size();
         textures += model.textures.size();
@@ -142,7 +142,7 @@ void Adren::GUI::renderInfo() {
 
     std::string modelVertices = "All Vertices: " + std::to_string(vertices) + "\n \n";
     std::string modelIndices = "All Indices: " + std::to_string(indices) + "\n \n";
-    std::string modelCount = "Number of Models: " + std::to_string(processing.swapchain.config.models.size()) + "\n \n";
+    std::string modelCount = "Number of Models: " + std::to_string(config.models.size()) + "\n \n";
     std::string modelTextures = "Number of Textures: " + std::to_string(textures) + "\n \n";
 
     ImGui::Begin("Rendering Information", false);
