@@ -9,7 +9,7 @@
 
 int main() {
     Config config{};
-    config.debug = true;
+    config.debug = false;
     config.enableGUI = true;
     
     Model sponza("../engine/resources/models/sponza/sponza.gltf");

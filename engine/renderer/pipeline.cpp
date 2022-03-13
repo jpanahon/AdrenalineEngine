@@ -7,8 +7,7 @@
 #include "pipeline.h"
 #include "info.h"
 
-namespace Adren {
-std::vector<char> Pipeline::readFile(const std::string& filename) {
+std::vector<char> Adren::Pipeline::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
@@ -26,27 +25,27 @@ std::vector<char> Pipeline::readFile(const std::string& filename) {
     return buffer;
 }
 
-VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code, VkDevice device) {
+VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<char>& code) {
+    size_t size = code.size();
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
+    createInfo.codeSize = size;
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    Adren::Tools::checkSize("Shader Size: ", size);
 
     VkShaderModule shaderModule;
 
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
-    }
+    Adren::Tools::vibeCheck("SHADER MODULE", vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
 
     return shaderModule;
 }
 
-void Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayout) {
+void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayout) {
     auto vertShaderCode = readFile("../engine/resources/shaders/vert.spv");
     auto fragShaderCode = readFile("../engine/resources/shaders/frag.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode, device);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode, device);
+    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = Adren::Info::vertShaderStageInfo();
     vertShaderStageInfo.module = vertShaderModule;
@@ -126,5 +125,4 @@ void Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayout) {
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
-}
 }

@@ -17,9 +17,9 @@ public:
 	VkPipelineLayout layout = VK_NULL_HANDLE;
 private:
 	static std::vector<char> readFile(const std::string& filename);
-	VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice device);
+	VkShaderModule createShaderModule(const std::vector<char>& code);
 
 	Devices& devices;
-	VkDevice device = devices.device;
+	VkDevice& device = devices.device;
 };
 }

@@ -56,12 +56,12 @@ void Adren::Renderer::initVulkan() {
     devices.createAllocator(); Adren::Tools::log("Memory allocator created..");
     swapchain.create(display.surface); Adren::Tools::log("Swapchain created..");
     swapchain.createImageViews(images); Adren::Tools::log("Image views created..");
+    images.createDepthResources(swapchain.extent); Adren::Tools::log("Depth resources created..");
     swapchain.createRenderPass(images.depth); Adren::Tools::log("Render pass created..");
     descriptor.createLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
     pipeline.create(swapchain, descriptor.layout); Adren::Tools::log("Graphics pipeline created..");
     processing.createCommands(display.surface); Adren::Tools::log("Command pool and buffers created..");
     processing.createSyncObjects(); Adren::Tools::log("Sync objects created..");
-    images.createDepthResources(swapchain.extent); Adren::Tools::log("Depth resources created..");
     swapchain.createFramebuffers(images.depth); Adren::Tools::log("Framebuffers created..");
     images.loadTextures(textures, processing.commandPool); Adren::Tools::log("Model textures created..");
     buffers.createModelBuffers(config.models, processing.commandPool); Adren::Tools::log("Index buffers created..");
