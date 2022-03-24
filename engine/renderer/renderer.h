@@ -39,16 +39,20 @@ private:
     VkInstance instance;
     Camera camera;
     VmaAllocator allocator;
-    
+
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+
     Display display{instance, camera};
     Devices devices{config.debug, instance, display.surface};
     Debugger debugging{config.debug, instance};
     Buffers buffers{devices};
     Swapchain swapchain{devices, display.window, config};
     Images images{config, devices, buffers};
+    Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{ devices, camera, config, display.window };
-    GUI gui{devices, buffers, swapchain, processing, instance, camera, config};
+    Processing processing{devices, camera, config, display.window};
+    GUI gui{devices, buffers, swapchain, processing, renderpass, instance, camera, config};
 };
 }

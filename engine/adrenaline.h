@@ -7,6 +7,7 @@
 
 #pragma once
 #include "renderer/renderer.h"
+#include "discord/discord.h"
 
 namespace Adren {
 class Engine {
@@ -16,5 +17,6 @@ public:
     void run();
 private:
     Config& config;
+    RPC* rpc;
 };
 }

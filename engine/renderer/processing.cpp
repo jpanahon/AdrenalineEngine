@@ -67,8 +67,9 @@ void Adren::Processing::createSyncObjects() {
     }
 }
 
-void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain) {
+void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass) {
     if (config.enableGUI) { ImGui::Render(); }
+
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
     vkWaitForFences(device, 1, &frames[currentFrame].fence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &frames[currentFrame].fence);
@@ -86,7 +87,7 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     vkResetCommandPool(device, frames[currentFrame].commandPool, 0);
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
     
-    swapchain.beginRenderPass(commandBuffer, imageIndex);
+    renderpass.begin(commandBuffer, imageIndex, swapchain.framebuffers, swapchain.extent);
 
     VkViewport viewport = { 0, float(swapchain.extent.height), float(swapchain.extent.width), -float(swapchain.extent.height), 0, 1 };
     VkRect2D scissor = { {0, 0}, {uint32_t(swapchain.extent.width), uint32_t(swapchain.extent.height)} };
@@ -105,11 +106,15 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     offset.firstIndex = 0;
     offset.vertexOffset = 0;
     offset.textureOffset = 0;
+    offset.dynamicOffset = 0;
+    offset.modelOffset = 0;
+    offset.dynamicAlignment = buffers.dynamicAlignment;
     for (int m = 0; m < config.models.size(); m++) {
-        uint32_t dynamicOffset = m * static_cast<uint32_t>(buffers.dynamicAlignment);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout, 0, 1, &descriptor.sets[imageIndex], 1, &dynamicOffset);
-        for (auto& node : config.models[m].nodes) {
-            config.models[m].drawNode(commandBuffer, pipeline.layout, node, offset);
+        offset.modelOffset += config.models[m].offset();
+        for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
+            Model::Node node = config.models[m].nodes[n];
+            config.models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset, buffers.dynamicAlignment);
+            //offset.dynamicOffset += offset.modelOffset * static_cast<uint32_t>(buffers.dynamicAlignment);
         }
         offset.textureOffset += config.models[m].textures.size();
     }

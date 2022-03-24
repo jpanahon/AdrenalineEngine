@@ -8,6 +8,10 @@
 #include "adrenaline.h"
 
 void Adren::Engine::run() {
+	rpc->initialize();
+	rpc->update();
+
 	Renderer renderer(config);
 	renderer.run();
+
 }

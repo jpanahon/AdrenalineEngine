@@ -11,6 +11,7 @@
 #define STBI_MSC_SECURE_CRT
 
 #include "model.h"
+#include "tools.h"
 #include <glm/gtc/type_ptr.hpp>
 
 Model::Model(std::string modelPath) {
@@ -31,14 +32,12 @@ Model::Model(std::string modelPath) {
         fillImages(gltf);
         fillMaterials(gltf);
         fillTextures(gltf);
-        const tinygltf::Scene& scene = gltf.scenes[0];
+        tinygltf::Scene scene = gltf.scenes[0];
         for (size_t i = 0; i < scene.nodes.size(); i++) {
             const tinygltf::Node node = gltf.nodes[scene.nodes[i]];
             fillNode(node, gltf, nullptr);
         }
     }
-
-    
 };
 
 void Model::fillTextures(tinygltf::Model& model) {
@@ -205,21 +204,35 @@ void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, 
     }
 }
 
-void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, Offset& offset) {
+uint32_t Model::offset() {
+    uint32_t offset = nodes.size();
+    for (Model::Node& node : nodes) {
+        offset += node.children.size();
+    }
+    return offset;
+}
+
+void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment) {
     if (iNode.mesh.primitives.size() > 0) {
-        for (Model::Primitive& prim : iNode.mesh.primitives) {
-            if (prim.indexCount > 0) {
+        for (size_t p = 0; p < iNode.mesh.primitives.size(); p++) {
+            Model::Primitive& prim = iNode.mesh.primitives[p];
+;           if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
                 const auto index = texture.index + offset.textureOffset;
+                //uint32_t dynOffset = offset.modelOffset * offset.dynamicOffset;
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamicOffset);
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
                 vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.firstIndex, offset.vertexOffset, 0);
                 offset.firstIndex += prim.indexCount;
-                offset.vertexOffset += prim.vertexCount;
+                offset.vertexOffset += prim.vertexCount;    
             }
         }
+        offset.dynamicOffset += static_cast<uint32_t>(offset.dynamicAlignment);
     }
 
-    for (auto& child : iNode.children) {
-        drawNode(commandBuffer, pipelineLayout, child, offset);
+    if (iNode.children.size() > 0) {
+        for (size_t i = 0; i < iNode.children.size(); i++) {
+            drawNode(commandBuffer, pipelineLayout, iNode.children[i], set, offset, dynAlignment);
+        }
     }
 }

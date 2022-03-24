@@ -3,8 +3,6 @@
 	Adrenaline Engine
 	
 	Definitions for the devices class
-	
-
 */
 
 #pragma once

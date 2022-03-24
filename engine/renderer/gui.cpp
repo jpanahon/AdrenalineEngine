@@ -11,6 +11,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include "tools.h"
+#include <time.h>
 
 void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
@@ -44,23 +45,23 @@ void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
 
-    ImGui_ImplVulkan_InitInfo init_info{};
-    init_info.Instance = instance;
-    init_info.PhysicalDevice = physicalDevice;
-    init_info.Device = device;
-    init_info.Queue = graphicsQueue;
+    ImGui_ImplVulkan_InitInfo guiInfo{};
+    guiInfo.Instance = instance;
+    guiInfo.PhysicalDevice = physicalDevice;
+    guiInfo.Device = device;
+    guiInfo.Queue = graphicsQueue;
 
     QueueFamilyIndices queueFam = Adren::Tools::findQueueFamilies(physicalDevice, surface);
 
-    init_info.QueueFamily = queueFam.graphicsFamily.value();
-    init_info.PipelineCache = VK_NULL_HANDLE;
-    init_info.DescriptorPool = imguiPool;
-    init_info.Allocator = VK_NULL_HANDLE;
-    init_info.MinImageCount = swapchain.images.size();
-    init_info.ImageCount = swapchain.images.size();
-    init_info.CheckVkResultFn = NULL;
-    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    ImGui_ImplVulkan_Init(&init_info, renderPass);
+    guiInfo.QueueFamily = queueFam.graphicsFamily.value();
+    guiInfo.PipelineCache = VK_NULL_HANDLE;
+    guiInfo.DescriptorPool = imguiPool;
+    guiInfo.Allocator = VK_NULL_HANDLE;
+    guiInfo.MinImageCount = swapchain.images.size();
+    guiInfo.ImageCount = swapchain.images.size();
+    guiInfo.CheckVkResultFn = NULL;
+    guiInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    ImGui_ImplVulkan_Init(&guiInfo, renderPass);
 
     VkCommandBuffer commandBuffer = Adren::Tools::beginSingleTimeCommands(device, commandPool);
 
@@ -84,15 +85,19 @@ void Adren::GUI::mouseHandler(GLFWwindow* window) {
         camera.toggled = false;
     } else {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && rightClick == true) {
-            glfwSetCursorPos(window, camera.lastX, camera.lastY);
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPos(window, savedX, savedY);
             rightClick = false;
         }
     }
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && rightClick == false) {
-        glfwSetCursorPos(window, camera.lastX, camera.lastY);
+        int centerX = camera.width / 2;
+        int centerY = camera.height / 2;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetCursorPos(window, centerX, centerY);
+        savedX = io.MousePos.x;
+        savedY = io.MousePos.y;
         rightClick = true;
     }
 
@@ -108,29 +113,49 @@ void Adren::GUI::newImguiFrame(GLFWwindow* window) {
 }
 
 void Adren::GUI::startGUI() {
-    //bool demo = true;
-    //ImGui::ShowDemoWindow(&demo);
-    cameraInfo();
-    renderInfo();
+    //bool yep = true;
+    //ImGui::ShowDemoWindow(&yep);
+    
+    if (showCameraInfo) { cameraInfo(&showCameraInfo); }
+    if (showRenderInfo) { renderInfo(&showRenderInfo); }
+   
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Debug")) {
+            ImGui::MenuItem("Camera Properties", "ALT + C", &showCameraInfo);
+            ImGui::MenuItem("Rendering Information", "ALT + R", &showRenderInfo);
+            ImGui::EndMenu();
+        }
+
+        //char time[100];
+        //auto t = std::time(nullptr);
+        //if (std::strftime(time, sizeof(time), "%A, %B %0e, %Y (%I:%M %p)", std::localtime(&t))) {
+        //    //ImGui::Text("| %s", time);
+        //}
+
+        ImGui::EndMainMenuBar();
+    } 
 }
 
-void Adren::GUI::cameraInfo() {
-    std::string cameraFront = "Front: " + glm::to_string(camera.front) + "\n \n";
-    std::string cameraPos = "Position: " + glm::to_string(camera.pos) + "\n \n";
-    std::string cameraUp = "Up: " + glm::to_string(camera.up) + "\n \n";
-    std::string cameraLastX = "Last X: " + std::to_string(camera.lastX) + "\n \n";
-    std::string cameraLastY = "Last Y: " + std::to_string(camera.lastY) + "\n \n";
-
-    ImGui::Begin("Camera Properties", false);
-    ImGui::Text(cameraFront.c_str());
-    ImGui::Text(cameraPos.c_str());
-    ImGui::Text(cameraUp.c_str());
-    ImGui::Text(cameraLastX.c_str());
-    ImGui::Text(cameraLastY.c_str());
+void Adren::GUI::cameraInfo(bool* open) {
+    ImGui::Begin("Camera Properties", open);
+    ImGui::Text("Front: X: %.3f, Y: %.3f, Z: %.3f \n", camera.front.x, camera.front.y, camera.front.z);
+    ImGui::Text("Pos: X: %.3f, Y: %.3f, Z: %.3f \n", camera.pos.x, camera.pos.y, camera.pos.z);
+    ImGui::Text("Up: X: %.3f, Y: %.3f, Z: %.3f \n", camera.up.x, camera.up.y, camera.up.z);
+    ImGui::Text("Last X: %.f \n", camera.lastX);
+    ImGui::Text("Last Y: %.f \n", camera.lastY);
+    
+    ImGui::Separator();
+    const char* format = "%.3f";
+    ImGui::Text("Camera Speed");
+    ImGui::SliderFloat("1.0 to 100.0", &camera.speed, 1.0f, 100.0f, format);
+    ImGui::Text("Camera FOV");
+    ImGui::SliderInt("30 to 120", &camera.fov, 30, 120);
+    ImGui::Text("Camera Draw Distance (x 1000)");
+    ImGui::SliderInt("1 to 100", &camera.drawDistance, 1, 100);
     ImGui::End();
 }
 
-void Adren::GUI::renderInfo() {
+void Adren::GUI::renderInfo(bool* open) {
     size_t vertices = 0;
     size_t indices = 0;
     size_t textures = 0;
@@ -140,22 +165,21 @@ void Adren::GUI::renderInfo() {
         textures += model.textures.size();
     }
 
-    std::string modelVertices = "All Vertices: " + std::to_string(vertices) + "\n \n";
-    std::string modelIndices = "All Indices: " + std::to_string(indices) + "\n \n";
-    std::string modelCount = "Number of Models: " + std::to_string(config.models.size()) + "\n \n";
-    std::string modelTextures = "Number of Textures: " + std::to_string(textures) + "\n \n";
-
-    ImGui::Begin("Rendering Information", false);
-    ImGui::Text(modelVertices.c_str());
-    ImGui::Text(modelIndices.c_str());
-    ImGui::Text(modelCount.c_str());
-    ImGui::Text(modelTextures.c_str());
+    ImGui::Begin("Rendering Information", open);
+    ImGui::Text("All Model Vertices: %d \n \n", vertices);
+    ImGui::Text("All Model Indices: %d \n \n", indices);
+    ImGui::Text("Number of Models: %d \n \n", config.models.size());
+    ImGui::Text("Number of Textures: %d", textures);
     ImGui::End();
 }
 
 void Adren::GUI::guiStyle() {
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("../engine/resources/fonts/Montserrat-Regular.ttf", 16);
+
     ImGuiStyle* style = &ImGui::GetStyle();
     ImVec4* colors = style->Colors;
+    colors[ImGuiCol_Text] = ImVec4(1.000f, 1.000f, 1.000f, 1.000f);
     colors[ImGuiCol_WindowBg] = ImVec4(0.000f, 0.000f, 0.000f, 1.000f);
     colors[ImGuiCol_TitleBg] = ImVec4(0.431f, 0.235f, 1.000f, 1.000f);
     colors[ImGuiCol_TitleBgActive] = ImVec4(0.431f, 0.235f, 1.000f, 1.000f);

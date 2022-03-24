@@ -29,10 +29,8 @@ public:
     }
 
     void create(VkSurfaceKHR& surface);
-    void createRenderPass(Image& depth);
-    void createFramebuffers(Image& depth);
+    void createFramebuffers(Image& depth, VkRenderPass& renderpass);
     void createImageViews(Images& image);
-    void beginRenderPass(VkCommandBuffer& commandBuffer, uint32_t& index);
 
     VkSwapchainKHR handle = VK_NULL_HANDLE;
     std::vector<VkImage> images;
@@ -40,15 +38,13 @@ public:
 
     std::vector<VkImageView> views;
     std::vector<VkFramebuffer> framebuffers;
-
-    VkRenderPass renderPass = VK_NULL_HANDLE;
+    VkFormat imageFormat;
 private:
     Devices& devices;
     VkDevice& device = devices.device;
     VkPhysicalDevice& physicalDevice = devices.physicalDevice;
     Config& config;
     GLFWwindow* window;
-    VkFormat imageFormat;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

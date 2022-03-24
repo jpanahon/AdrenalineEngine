@@ -10,6 +10,7 @@
 #include "buffers.h"
 #include "pipeline.h"
 #include "descriptor.h"
+#include "renderpass.h"
 
 namespace Adren {
 class Processing {
@@ -17,7 +18,7 @@ public:
     Processing(Devices& devices, Camera& camera, Config& config, GLFWwindow* window) : devices(devices), camera(camera), config(config), window(window) {}
     void createCommands(VkSurfaceKHR& surface);
     void createSyncObjects();
-    void render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain);
+    void render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass);
     void cleanup();
    
     VkCommandPool commandPool = VK_NULL_HANDLE;

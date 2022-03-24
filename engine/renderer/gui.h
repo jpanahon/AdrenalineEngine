@@ -16,8 +16,8 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices& devices, Buffers& buffers, Swapchain& swapchain, Processing& processing, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
-        buffers(buffers), swapchain(swapchain), processing(processing), instance(instance), camera(camera), config(config) {}
+    GUI(Devices& devices, Buffers& buffers, Swapchain& swapchain, Processing& processing, Renderpass& renderpass, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
+        buffers(buffers), swapchain(swapchain), processing(processing), renderpass(renderpass), instance(instance), camera(camera), config(config) {}
 
     void initImGui(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
@@ -25,14 +25,15 @@ public:
     void newImguiFrame(GLFWwindow* window);
     void startGUI();
 private:
-    void cameraInfo();
-    void renderInfo();
+    void cameraInfo(bool* open);
+    void renderInfo(bool* open);
     void guiStyle();
 
     Devices& devices;
     Buffers& buffers;
     Swapchain& swapchain;
     Processing& processing;
+    Renderpass& renderpass;
     Config& config;
     Camera& camera;
 
@@ -41,10 +42,15 @@ private:
     VkInstance& instance;
     VkQueue& graphicsQueue = devices.graphicsQueue;
     VkPhysicalDevice& physicalDevice = devices.physicalDevice;
-    VkRenderPass& renderPass = swapchain.renderPass;
-    std::vector<VkImage>& swapChainImages = swapchain.images;
+    VkRenderPass& renderPass = renderpass.handle;
     VkCommandPool& commandPool = processing.commandPool;
 
     bool rightClick = false;
+
+    int savedX = 0;
+    int savedY = 0;
+    
+    bool showRenderInfo = false;
+    bool showCameraInfo = false;
 };
 }

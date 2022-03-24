@@ -95,41 +95,15 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
 
         std::array<VkWriteDescriptorSet, 4> dWrites{};
 
-        /*descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = descriptorSets[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1; */
         size_t count = 1;
         fillWrites(dWrites, 0, sets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, count);
         dWrites[0].pBufferInfo = &bufferInfo;
 
-        /*descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        dWrites[1].dstSet = descriptorSets[i];
-        dWrites[1].dstBinding = 1;
-        dWrites[1].dstArrayElement = 0;
-        dWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        dWrites[1].descriptorCount = 1; */
         fillWrites(dWrites, 1, sets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, count);
         dWrites[1].pBufferInfo = &dynamicBufferInfo;
 
-        /*dWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        dWrites[2].dstSet = descriptorSets[i];
-        dWrites[2].dstBinding = 2;
-        dWrites[2].dstArrayElement = 0;
-        dWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        dWrites[2].descriptorCount = 1;*/
-
         fillWrites(dWrites, 2, sets[i], 2, VK_DESCRIPTOR_TYPE_SAMPLER, count);
         dWrites[2].pImageInfo = &samplerInfo;
-
-        /*dWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        dWrites[3].dstSet = descriptorSets[i];
-        dWrites[3].dstBinding = 3;
-        dWrites[3].dstArrayElement = 0;
-        dWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        dWrites[3].descriptorCount = textureSize;*/
 
         fillWrites(dWrites, 3, sets[i], 3, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureSize);
         dWrites[3].pImageInfo = imageInfo;

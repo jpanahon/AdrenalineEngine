@@ -55,7 +55,8 @@ public:
     std::vector<Image> images;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, Offset& offset);
+    uint32_t offset();
+    void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment);
 private:
     void fillTextures(tinygltf::Model& model);
     void fillMaterials(tinygltf::Model& model);

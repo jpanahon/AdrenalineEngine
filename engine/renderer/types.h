@@ -109,22 +109,34 @@ struct Frame {
 
 struct Camera {
     bool toggled = true;
+    bool firstMouse = true;
 
-    glm::vec3 pos = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 pos = glm::vec3(0.0f, 10.0f, 3.0f);
     glm::vec3 front = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    float lastX;
-    float lastY;
-
     int height;
-    int width;
+    int width; 
+
+    double lastX = height / 2;
+    double lastY = width / 2;
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+
+    float speed = 1.0f;
+
+    int fov = 90;
+    int drawDistance = 10;
 };
 
 struct Offset {
     uint32_t firstIndex = 0;
     uint32_t vertexOffset = 0;
     uint32_t textureOffset = 0;
+    uint32_t dynamicOffset = 0;
+    uint32_t modelOffset = 0;
+    VkDeviceSize dynamicAlignment = 0;
 };
 
 struct Buffer {

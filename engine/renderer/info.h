@@ -38,7 +38,7 @@ inline VkDeviceQueueCreateInfo deviceQueueCreateInfo() {
     return queueCreateInfo;
 }
 
-inline VkAttachmentDescription colorAttachment(VkFormat format) {
+inline VkAttachmentDescription colorAttachment(VkFormat& format) {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = format;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -46,13 +46,13 @@ inline VkAttachmentDescription colorAttachment(VkFormat format) {
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     return colorAttachment;
 }
 
-inline VkAttachmentDescription depthAttachment(VkFormat format) {
+inline VkAttachmentDescription depthAttachment(VkFormat& format) {
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = format;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -60,7 +60,7 @@ inline VkAttachmentDescription depthAttachment(VkFormat format) {
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     
     return depthAttachment;

@@ -26,12 +26,10 @@ std::vector<char> Adren::Pipeline::readFile(const std::string& filename) {
 }
 
 VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<char>& code) {
-    size_t size = code.size();
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = size;
+    createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    Adren::Tools::checkSize("Shader Size: ", size);
 
     VkShaderModule shaderModule;
 
@@ -40,7 +38,7 @@ VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<char>& code
     return shaderModule;
 }
 
-void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayout) {
+void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayout, VkRenderPass& renderpass) {
     auto vertShaderCode = readFile("../engine/resources/shaders/vert.spv");
     auto fragShaderCode = readFile("../engine/resources/shaders/frag.spv");
 
@@ -117,7 +115,7 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = layout;
-    pipelineInfo.renderPass = swapchain.renderPass;
+    pipelineInfo.renderPass = renderpass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

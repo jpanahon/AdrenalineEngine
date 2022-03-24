@@ -12,7 +12,7 @@ namespace Adren {
 class Pipeline {
 public:
 	Pipeline(Devices& devices) : devices(devices) {}
-	void create(Swapchain& swapchain, VkDescriptorSetLayout& layout);
+	void create(Swapchain& swapchain, VkDescriptorSetLayout& layout, VkRenderPass& renderpass);
 	VkPipeline handle;
 	VkPipelineLayout layout = VK_NULL_HANDLE;
 private:

@@ -4,10 +4,10 @@ project(Adrenaline-Engine)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
-file(GLOB SOURCE_FILES "main.cpp" "engine/renderer/*.cpp" "engine/*.cpp" "lib/imgui/*.cpp")
-file(GLOB HEADER_FILES "engine/renderer/*.h" "engine/*.h" "lib/stb/*.h" "lib/vma/*.h" "lib/tinyobjloader/*.h" "lib/glm/*.hpp" "lib/imgui/*.h" "lib/tinygltf/*.h")
+file(GLOB SOURCE_FILES "main.cpp" "engine/renderer/*.cpp" "engine/discord/*.cpp" "engine/*.cpp" "lib/imgui/*.cpp" "lib/discord/*.cpp")
+file(GLOB HEADER_FILES "engine/renderer/*.h" "engine/discord" "engine/*.h" "lib/stb/*.h" "lib/vma/*.h" "lib/tinyobjloader/*.h" "lib/glm/*.hpp" "lib/imgui/*.h" "lib/tinygltf/*.h" "lib/discord/*.h")
 
-include_directories(${CMAKE_CURRENT_DIRECTORY} "engine/renderer" "engine/" "lib/imgui" "lib/vma" "lib/tinyobjloader" "lib/" "lib/tinygltf")
+include_directories(${CMAKE_CURRENT_DIRECTORY} "engine/renderer" "engine/discord" "engine/" "lib/imgui" "lib/vma" "lib/tinyobjloader" "lib/" "lib/tinygltf" "lib/discord")
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
