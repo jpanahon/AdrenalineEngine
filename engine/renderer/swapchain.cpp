@@ -43,7 +43,7 @@ void Adren::Swapchain::create(VkSurfaceKHR& surface) {
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D chosenExtent = chooseSwapExtent(swapChainSupport.capabilities);
 
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 2;
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
@@ -84,7 +84,7 @@ void Adren::Swapchain::create(VkSurfaceKHR& surface) {
     images.resize(imageCount);
     vkGetSwapchainImagesKHR(device, handle, &imageCount, images.data());
 
-    imageFormat = surfaceFormat.format;
+    imgFormat = surfaceFormat.format;
     extent = chosenExtent;
 }
 
@@ -92,7 +92,7 @@ void Adren::Swapchain::createImageViews(Images& image) {
     views.resize(images.size());
 
     for (uint32_t i = 0; i < images.size(); i++) {
-        views[i] = image.createImageView(images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        views[i] = image.createImageView(images[i], imgFormat, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 

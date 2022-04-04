@@ -35,7 +35,7 @@ void Adren::Renderer::createInstance() {
         instanceInfo.enabledLayerCount = static_cast<uint32_t>(devices.validationLayers.size());
         instanceInfo.ppEnabledLayerNames = devices.validationLayers.data();
 
-        debugging.populateDebugMessengerCreateInfo(debugCreateInfo);
+        debugging.fillCreateInfo(debugCreateInfo);
         instanceInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
     } else {
         instanceInfo.enabledLayerCount = 0;
@@ -49,7 +49,7 @@ void Adren::Renderer::createInstance() {
 void Adren::Renderer::initVulkan() {
     Adren::Tools::log("Initializing program..");
     createInstance(); Adren::Tools::log("Instance created..");
-    debugging.setupDebugMessenger(); Adren::Tools::log("Debug messenger set up..");
+    debugging.setup(); Adren::Tools::log("Debug messenger set up..");
     display.createSurface(); Adren::Tools::log("Surface created..");
     devices.pickPhysicalDevice(); Adren::Tools::log("Physical device chosen..");
     devices.createLogicalDevice(); Adren::Tools::log("Logical device created..");
@@ -57,7 +57,7 @@ void Adren::Renderer::initVulkan() {
     swapchain.create(display.surface); Adren::Tools::log("Swapchain created..");
     swapchain.createImageViews(images); Adren::Tools::log("Image views created..");
     images.createDepthResources(swapchain.extent); Adren::Tools::log("Depth resources created..");
-    renderpass.create(images.depth, swapchain.imageFormat); Adren::Tools::log("Render pass created..");
+    renderpass.create(images.depth, swapchain.imgFormat); Adren::Tools::log("Render pass created..");
     descriptor.createLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
     pipeline.create(swapchain, descriptor.layout, renderpass.handle); Adren::Tools::log("Graphics pipeline created..");
     processing.createCommands(display.surface); Adren::Tools::log("Command pool and buffers created..");
@@ -76,7 +76,7 @@ void Adren::Renderer::mainLoop() {
         
         if (config.enableGUI) { gui.newImguiFrame(display.window); gui.startGUI(); }
         if (camera.toggled) { buffers.updateUniformBuffer(camera, swapchain.extent); processInput(display.window, camera); }
-        processing.render(buffers, pipeline, descriptor, swapchain, renderpass);
+        processing.render(buffers, pipeline, descriptor, swapchain, renderpass, gui);
     }
 
     vkDeviceWaitIdle(devices.device);
@@ -99,7 +99,7 @@ void Adren::Renderer::cleanup() {
     for (auto& m : config.models) {
         for (auto& tex : m.textures) {
             vkDestroyImageView(devices.device, tex.view, nullptr);
-            vmaDestroyImage(allocator, tex.image, tex.memory);
+            vmaDestroyImage(devices.allocator, tex.image, tex.memory);
         }
     }
 

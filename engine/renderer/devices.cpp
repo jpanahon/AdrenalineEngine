@@ -82,6 +82,15 @@ void Adren::Devices::createLogicalDevice() {
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexing{};
+    descriptorIndexing.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+
+    descriptorIndexing.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexing.runtimeDescriptorArray = VK_TRUE;
+    descriptorIndexing.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    descriptorIndexing.descriptorBindingPartiallyBound = VK_TRUE;
+
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
@@ -99,6 +108,7 @@ void Adren::Devices::createLogicalDevice() {
     } else {
         createInfo.enabledLayerCount = 0;
     }
+    createInfo.pNext = &descriptorIndexing;
     
     Adren::Tools::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
     

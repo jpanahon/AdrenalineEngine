@@ -20,11 +20,11 @@ public:
 	std::vector<VkDescriptorSet> sets;
 	VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 	VkDescriptorPool pool = VK_NULL_HANDLE;
+	VkSampler sampler = VK_NULL_HANDLE;
 private:
 	void fillWrites(std::array<VkWriteDescriptorSet, 4>& write, int index, VkDescriptorSet& dSet, int binding, VkDescriptorType type, size_t& count);
 	Buffers& buffers;
 	Devices& devices;
 	VkDevice& device = devices.device;
-	VkSampler sampler;
 };
 }

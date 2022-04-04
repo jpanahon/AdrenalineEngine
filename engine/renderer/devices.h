@@ -30,7 +30,7 @@ public:
     VkQueue presentQueue = VK_NULL_HANDLE;
     VkSurfaceKHR& surface;
     VmaAllocator allocator = VK_NULL_HANDLE;
-    const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
 private:
     bool& debug;
     VkInstance& instance;

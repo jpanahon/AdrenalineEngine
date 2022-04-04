@@ -22,7 +22,7 @@ Model::Model(std::string modelPath) {
 
     bool file = tinyGLTF.LoadASCIIFromFile(&gltf, &error, &warning, modelPath);
 
-    if (!file) { std::cerr << "Unable to load glTF file. \n \n"; }
+    if (!file) { Adren::Tools::log("Unable to load glTF file."); }
 
     if (!error.empty()) { std::cerr << error; }
 
@@ -219,7 +219,6 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
 ;           if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
                 const auto index = texture.index + offset.textureOffset;
-                //uint32_t dynOffset = offset.modelOffset * offset.dynamicOffset;
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamicOffset);
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
                 vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.firstIndex, offset.vertexOffset, 0);

@@ -23,11 +23,25 @@ void Adren::Descriptor::createLayout(std::vector<Model>& models) {
 
     VkDescriptorSetLayoutBinding textureBinding = Adren::Info::textureLayoutBinding(textures.size());
 
+
     std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboBinding, dynamicUboBinding, samplerBinding, textureBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+
+    VkDescriptorBindingFlags flags[4];
+    flags[0] = 0;
+    flags[1] = 0;
+    flags[2] = 0;
+    flags[3] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags{};
+    bindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlags.bindingCount = static_cast<uint32_t>(bindings.size());
+    bindingFlags.pBindingFlags = flags;
+
     layoutInfo.pBindings = bindings.data();
+    layoutInfo.pNext = &bindingFlags;
 
     Adren::Tools::vibeCheck("DESCRIPTOR SET LAYOUT", vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout));
 }
@@ -59,14 +73,25 @@ void Adren::Descriptor::fillWrites(std::array<VkWriteDescriptorSet, 4>& write, i
 
 void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images) {
     size_t textureSize = textures.size();
-    std::vector<VkDescriptorSetLayout> layouts(images.size(), layout);
+    uint32_t setCount = static_cast<uint32_t>(images.size());
+    std::vector<VkDescriptorSetLayout> layouts(setCount, layout);
+    
+    uint32_t counts[4];
+    for (int c = 0; c < 4; c++) { counts[c] = textureSize; }
+
+    VkDescriptorSetVariableDescriptorCountAllocateInfo setCounts{};
+    setCounts.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+    setCounts.descriptorSetCount = setCount;
+    setCounts.pDescriptorCounts = counts;
+
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = pool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(images.size());
+    allocInfo.descriptorSetCount = setCount;
     allocInfo.pSetLayouts = layouts.data();
+    allocInfo.pNext = &setCounts;
 
-    sets.resize(images.size());
+    sets.resize(setCount);
     Adren::Tools::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, sets.data()));
 
     for (size_t i = 0; i < sets.size(); i++) {

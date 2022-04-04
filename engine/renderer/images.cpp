@@ -115,7 +115,6 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
 
 void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
     for (Model model : config.models) {
-        Adren::Tools::checkSize("Textures Size: ", model.textures.size());
         for (size_t t = 0; t < model.textures.size(); t++) {
             Model::Texture texture = model.textures[t];
             int32_t index = model.textures[t].index;
@@ -141,6 +140,10 @@ void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& 
             texture.view = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
             textures.push_back(texture);
         }
+    }
+
+    if (textures.size() < 256) {
+        size_t size = 256 - textures.size();
     }
 }
 

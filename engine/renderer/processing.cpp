@@ -67,7 +67,7 @@ void Adren::Processing::createSyncObjects() {
     }
 }
 
-void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass) {
+void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui) {
     if (config.enableGUI) { ImGui::Render(); }
 
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
@@ -119,10 +119,12 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
         offset.textureOffset += config.models[m].textures.size();
     }
 
-    if (config.enableGUI) { ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer); }
     vkCmdEndRenderPass(commandBuffer);
-
     vkEndCommandBuffer(commandBuffer);
+
+    if (config.enableGUI) { 
+        gui.recordGUI(currentFrame, imageIndex);
+    }
 
     buffers.updateDynamicUniformBuffer(imageIndex, config.models);
     

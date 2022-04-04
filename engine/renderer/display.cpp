@@ -61,7 +61,6 @@ void Adren::Display::initWindow() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     camera.height = mode->height;

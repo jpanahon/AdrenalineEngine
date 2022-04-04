@@ -87,7 +87,6 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     VkPhysicalDeviceProperties physicalDeviceProperties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     VkDeviceSize minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
-    Adren::Tools::checkSize("Min UBO Alignment: ", minUboAlignment);
     dynamicAlignment = sizeof(glm::mat4);
     if (minUboAlignment > 0) {
         dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
@@ -95,8 +94,7 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
 
     uint32_t modelSize = 0;
     for (Model& model : models) { modelSize += model.offset(); }
-    //VkDeviceSize duBufferSize = models.size() * dynamicAlignment;
-    VkDeviceSize duBufferSize = dynamicAlignment * modelSize; // TODO: This probably causes seizures 
+    VkDeviceSize duBufferSize = dynamicAlignment * modelSize;
     uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(duBufferSize, dynamicAlignment);
     assert(uboData.model);
 
@@ -105,21 +103,19 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     for (size_t i = 0; i < images.size(); i++) {
         createBuffer(allocator, duBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform[i], VMA_MEMORY_USAGE_CPU_TO_GPU);
         vmaMapMemory(allocator, dynamicUniform[i].memory, &dynamicUniform[i].mapped);
-        memcpy(dynamicUniform[i].mapped, uboData.model, dynamicAlignment * modelSize); // TODO: This probably causes seizures
+        memcpy(dynamicUniform[i].mapped, uboData.model, dynamicAlignment * modelSize);
     }
 }
 
 void Adren::Buffers::updateUniformBuffer(Camera& camera, VkExtent2D& extent) {
-    if (camera.toggled) {
-        UniformBufferObject ubo{};
-        ubo.view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
+    UniformBufferObject ubo{};
+    ubo.view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
 
-        float screen = (float)extent.width / (float)extent.height;
-        uint32_t distance = camera.drawDistance * 1000;
-        ubo.proj = glm::perspective(glm::radians((float)camera.fov), screen, 0.1f, (float)distance);
-        ubo.proj[1][1] *= -1;
-        memcpy(uniform.mapped, &ubo, sizeof(ubo));
-    }
+    float screen = (float)extent.width / (float)extent.height;
+    uint32_t distance = camera.drawDistance * 1000;
+    ubo.proj = glm::perspective(glm::radians((float)camera.fov), screen, 0.1f, (float)distance);
+    ubo.proj[1][1] *= -1;
+    memcpy(uniform.mapped, &ubo, sizeof(ubo));
 }
 
 void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Model>& models) {
@@ -127,8 +123,12 @@ void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Mode
     uint32_t modelSize = 0;
     for (Model& model : models) {
         modelSize += model.offset();
-        for (Model::Node& node : model.nodes) {   
+        for (Model::Node& node : model.nodes) {
+            if (model.position != glm::vec3(1.0f)) { glm::translate(node.matrix, model.position); }
+            if (model.scale != 0.0f) { glm::scale(node.matrix, glm::vec3(model.scale)); }
+            if (model.rotationAngle != 0.0f) { glm::rotate(node.matrix, glm::radians(model.rotationAngle), model.rotationAxis); }
             matrices.push_back(node.matrix);
+
             if (node.children.size() > 0) {
                 for (Model::Node& child : node.children) {
                     matrices.push_back(child.matrix);

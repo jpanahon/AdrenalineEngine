@@ -16,7 +16,9 @@ int main() {
     //Model bistro("../engine/resources/models/bistro/bistro2.gltf");
 
     Model scientist("../engine/resources/models/scientist/scene.gltf");
-
+    scientist.rotationAngle = -90;
+    scientist.scale = 10.0f;
+    scientist.rotationAxis = ADREN_X_AXIS;
     //Model revenant("../engine/resources/models/revenant/scene.gltf");
     //revenant.position = glm::vec3(0.0f, 0.0f, -15.5f);
     //revenant.scale = 50.0f;
@@ -26,7 +28,9 @@ int main() {
     //batman.rotationAngle = 90.0f;
     //batman.rotationAxis = ADREN_X_AXIS;
 
-    config.models = {sponza, deccer};
+    //Model cj("../engine/resources/models/CJ/scene.gltf");
+
+    config.models = {sponza};
 
     Adren::Engine engine(config); 
 

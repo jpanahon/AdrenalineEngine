@@ -38,7 +38,8 @@ public:
 
     std::vector<VkImageView> views;
     std::vector<VkFramebuffer> framebuffers;
-    VkFormat imageFormat;
+    VkFormat imgFormat;
+    uint32_t imageCount;
 private:
     Devices& devices;
     VkDevice& device = devices.device;

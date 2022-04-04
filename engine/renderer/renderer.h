@@ -10,15 +10,9 @@
 #include <vector>
 
 #include "model.h"
-//#include "descriptor.h"
-//#include "processing.h"
 #include "display.h"
-//#include "pipeline.h"
-// #include "images.h"
-// #include "devices.h" 
-// #include "buffers.h"
 #include "debugging.h"
-#include "gui.h"
+#include "processing.h" // Has all the other components included
 
 namespace Adren {
 class Renderer {
@@ -38,7 +32,6 @@ private:
     
     VkInstance instance;
     Camera camera;
-    VmaAllocator allocator;
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -53,6 +46,6 @@ private:
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
     Processing processing{devices, camera, config, display.window};
-    GUI gui{devices, buffers, swapchain, processing, renderpass, instance, camera, config};
+    GUI gui{devices, buffers, descriptor, swapchain, instance, camera, config};
 };
 }
