@@ -27,6 +27,7 @@ void Images::createImage(uint32_t width, uint32_t height, VkFormat format, VkIma
 
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = vmaUsage;
+    allocInfo.requiredFlags = properties;
 
     vmaCreateImage(allocator, &imageInfo, &allocInfo, &image.image, &image.memory, nullptr);
 }

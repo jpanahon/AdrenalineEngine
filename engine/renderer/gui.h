@@ -12,7 +12,6 @@
 #include <vector>
 #include "types.h"
 #include "swapchain.h"
-#include "buffers.h"
 #include "pipeline.h"
 #include "descriptor.h"
 #include "renderpass.h"
@@ -20,15 +19,29 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices& devices, Buffers& buffers, Descriptor& descriptor, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
-        buffers(buffers), descriptor(descriptor), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
+    GUI(Devices& devices, Buffers& buffers, Images& images, Descriptor& descriptor, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
+        buffers(buffers), descriptor(descriptor), images(images), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
 
     void initImGui(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
     void mouseHandler(GLFWwindow* window);
     void newImguiFrame(GLFWwindow* window);
     void startGUI();
-    void recordGUI(size_t& frame, uint32_t& index);
+    void recordGUI(VkCommandBuffer& buffer, VkDescriptorSet& set);
+
+    struct Base {
+        int32_t width = 800;
+        int32_t height = 600;
+        VkRenderPass renderpass;
+        VkCommandPool commandPool;
+        Image color, depth;
+        VkFramebuffer framebuffer;
+        VkCommandBuffer commandBuffer;
+        VkDescriptorSet set;
+        VkDescriptorImageInfo info;
+        VkSampler sampler;
+    } base;
+
 private:
     void cameraInfo(bool* open);
     void renderInfo(bool* open);
@@ -37,11 +50,13 @@ private:
     void createCommands();
     void createRenderPass();
     void createFramebuffers();
+    VkDescriptorSet vport;
 
     Devices& devices;
     Buffers& buffers;
     Descriptor& descriptor;
     Swapchain& swapchain;
+    Images& images;
 
     Config& config;
     Camera& camera;
@@ -52,11 +67,9 @@ private:
     VkQueue& graphicsQueue = devices.graphicsQueue;
     QueueFamilyIndices queueFam;
     VkPhysicalDevice& physicalDevice = devices.physicalDevice;
-    VkRenderPass renderPass = VK_NULL_HANDLE;
-    VkCommandPool commandPool = VK_NULL_HANDLE;
 
-    std::vector<VkFramebuffer> framebuffers;
-    std::vector<VkCommandBuffer> commandBuffers;
+
+
 
     bool rightClick = false;
 

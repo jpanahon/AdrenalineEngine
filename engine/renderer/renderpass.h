@@ -7,7 +7,7 @@ class Renderpass {
 public:
 	Renderpass(Devices& devices) : devices(devices) {}
 
-	void create(Image& depth, VkFormat& imageFormat);
+	void create(Image& depth, VkFormat& imageFormat, VkInstance& instance);
 	void begin(VkCommandBuffer& commandBuffer, uint32_t& index, std::vector<VkFramebuffer>& framebuffers, VkExtent2D& extent);
 	VkRenderPass handle = VK_NULL_HANDLE;
 private:

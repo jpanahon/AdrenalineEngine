@@ -46,6 +46,6 @@ private:
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
     Processing processing{devices, camera, config, display.window};
-    GUI gui{devices, buffers, descriptor, swapchain, instance, camera, config};
+    GUI gui{devices, buffers, images, descriptor, swapchain, instance, camera, config}; 
 };
 }

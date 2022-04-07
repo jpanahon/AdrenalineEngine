@@ -4,8 +4,6 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    vec3 lPos;
-    vec3 lColor;
 } ubo;
 
 layout(binding = 1) uniform UboInstance {

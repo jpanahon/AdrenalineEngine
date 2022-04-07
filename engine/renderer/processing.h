@@ -13,7 +13,7 @@ namespace Adren {
 class Processing {
 public:
     Processing(Devices& devices, Camera& camera, Config& config, GLFWwindow* window) : devices(devices), camera(camera), config(config), window(window) {}
-    void createCommands(VkSurfaceKHR& surface);
+    void createCommands(VkSurfaceKHR& surface, VkInstance& instance);
     void createSyncObjects();
     void render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
     void cleanup();

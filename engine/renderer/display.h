@@ -23,7 +23,6 @@ public:
 	bool framebufferResized = false;
 	GLFWwindow* window;
 	VkSurfaceKHR surface;
-
 private:
 	VkInstance& instance;
 	Camera& camera;

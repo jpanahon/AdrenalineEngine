@@ -2,7 +2,7 @@
 #include "tools.h"
 #include "info.h"
 
-void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat) {
+void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& instance) {
     VkAttachmentDescription colorAttachment = Adren::Info::colorAttachment(imageFormat);
     VkAttachmentDescription depthAttachment = Adren::Info::depthAttachment(depth.format);
 
@@ -36,6 +36,7 @@ void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat) {
     renderPassInfo.pDependencies = &dependency;
 
     Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &renderPassInfo, nullptr, &handle));
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)handle, "MAIN RENDER PASS");
 }
 
 void Adren::Renderpass::begin(VkCommandBuffer& commandBuffer, uint32_t& index, std::vector<VkFramebuffer>& framebuffers, VkExtent2D& extent) {

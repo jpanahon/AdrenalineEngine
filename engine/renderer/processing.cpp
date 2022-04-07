@@ -23,16 +23,16 @@ void Adren::Processing::cleanup() {
     vkDestroyCommandPool(device, commandPool, nullptr);
 }
 
-void Adren::Processing::createCommands(VkSurfaceKHR& surface) {
+void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instance) {
     QueueFamilyIndices queueFamilyIndices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
     for (int i = 0; i < maxFramesInFlight; i++) {
         Adren::Tools::vibeCheck("COMMAND POOL", vkCreateCommandPool(device, &poolInfo, nullptr, &frames[i].commandPool));
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)frames[i].commandPool, "FRAME COMMAND POOL");
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -41,6 +41,7 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface) {
         allocInfo.commandBufferCount = 1;
 
         Adren::Tools::vibeCheck("ALLOCATE COMMAND BUFFERS", vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer));
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)frames[i].commandBuffer, "FRAME COMMAND BUFFER");
     }
 
     VkCommandPoolCreateInfo primaryPoolInfo{};
@@ -48,6 +49,7 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface) {
     primaryPoolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     primaryPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     Adren::Tools::vibeCheck("CREATED PRIMARY COMMAND POOL", vkCreateCommandPool(device, &primaryPoolInfo, nullptr, &commandPool));
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)commandPool, "PRIMARY COMMAND POOL");
 }
 
 void Adren::Processing::createSyncObjects() {
@@ -88,13 +90,13 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
     
     renderpass.begin(commandBuffer, imageIndex, swapchain.framebuffers, swapchain.extent);
-
+    /*
     VkViewport viewport = { 0, float(swapchain.extent.height), float(swapchain.extent.width), -float(swapchain.extent.height), 0, 1 };
     VkRect2D scissor = { {0, 0}, {uint32_t(swapchain.extent.width), uint32_t(swapchain.extent.height)} };
 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
+    */
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.handle);
 
     VkBuffer vertexBuffers[] = { buffers.vertex.buffer };
@@ -119,12 +121,18 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
         offset.textureOffset += config.models[m].textures.size();
     }
 
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
     vkCmdEndRenderPass(commandBuffer);
+
+    {
+        if (config.enableGUI) {
+            gui.recordGUI(commandBuffer, descriptor.sets[imageIndex]);
+        }
+    }
+
     vkEndCommandBuffer(commandBuffer);
 
-    if (config.enableGUI) { 
-        gui.recordGUI(currentFrame, imageIndex);
-    }
 
     buffers.updateDynamicUniformBuffer(imageIndex, config.models);
     
@@ -137,8 +145,10 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    std::array<VkCommandBuffer, 1> commandBuffers = { commandBuffer };
+    submitInfo.commandBufferCount = commandBuffers.size();
+
+    submitInfo.pCommandBuffers = commandBuffers.data();
     
     VkSemaphore signalSemaphores[] = {frames[currentFrame].rSemaphore};
     submitInfo.signalSemaphoreCount = 1;
