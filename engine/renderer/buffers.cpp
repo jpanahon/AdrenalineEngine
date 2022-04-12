@@ -111,7 +111,7 @@ void Adren::Buffers::updateUniformBuffer(Camera& camera, VkExtent2D& extent) {
     UniformBufferObject ubo{};
     ubo.view = glm::lookAt(camera.pos, camera.pos + camera.front, camera.up);
 
-    float screen = (float)extent.width / (float)extent.height;
+    float screen = (float)camera.width / (float)camera.height;
     uint32_t distance = camera.drawDistance * 1000;
     ubo.proj = glm::perspective(glm::radians((float)camera.fov), screen, 0.1f, (float)distance);
     ubo.proj[1][1] *= -1;
@@ -127,7 +127,7 @@ void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Mode
             if (model.position != glm::vec3(1.0f)) { glm::translate(node.matrix, model.position); }
             if (model.scale != 0.0f) { glm::scale(node.matrix, glm::vec3(model.scale)); }
             if (model.rotationAngle != 0.0f) { glm::rotate(node.matrix, glm::radians(model.rotationAngle), model.rotationAxis); }
-            matrices.push_back(node.matrix);
+            matrices.push_back(glm::mat4(1.0f));
 
             if (node.children.size() > 0) {
                 for (Model::Node& child : node.children) {

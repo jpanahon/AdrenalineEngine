@@ -56,6 +56,7 @@ public:
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     uint32_t offset();
+    glm::mat4 matrix(Node node);
     void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment);
 private:
     void fillTextures(tinygltf::Model& model);

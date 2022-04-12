@@ -42,8 +42,7 @@ void Adren::Debugger::setup() {
     Adren::Tools::vibeCheck("DEBUG MESSENGER", createUtils(instance, &createInfo, nullptr, &debugMessenger));
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Debugger::callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-    VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Debugger::callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     Adren::Tools::log(pCallbackData->pMessage);
     
     return VK_FALSE;

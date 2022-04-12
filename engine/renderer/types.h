@@ -112,15 +112,15 @@ struct Camera {
     bool toggled = true;
     bool firstMouse = true;
 
-    glm::vec3 pos = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 front = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.3f);
+    glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    int height;
-    int width; 
+    int32_t height;
+    int32_t width; 
 
-    double lastX = height / 2;
-    double lastY = width / 2;
+    double lastX = width / 2;
+    double lastY = height / 2;
 
     float yaw = -90.0f;
     float pitch = 0.0f;

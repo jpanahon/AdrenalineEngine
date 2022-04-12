@@ -27,18 +27,18 @@ public:
     void mouseHandler(GLFWwindow* window);
     void newImguiFrame(GLFWwindow* window);
     void startGUI();
-    void recordGUI(VkCommandBuffer& buffer, VkDescriptorSet& set);
+    void recordGUI(VkCommandBuffer& buffer, Buffers& buffers, VkPipeline& pipeline, VkPipelineLayout& layout, uint32_t& index);
 
     struct Base {
-        int32_t width = 800;
-        int32_t height = 600;
+        int32_t width = 1600;
+        int32_t height = 1050;
         VkRenderPass renderpass;
         VkCommandPool commandPool;
         Image color, depth;
         VkFramebuffer framebuffer;
         VkCommandBuffer commandBuffer;
         VkDescriptorSet set;
-        VkDescriptorImageInfo info;
+        VkImageView view;
         VkSampler sampler;
     } base;
 

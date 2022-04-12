@@ -7,6 +7,8 @@
 
 #include "display.h"
 #include <iostream>
+#include <algorithm>
+#include <glm/gtc/type_ptr.hpp>
 #include "tinygltf/stb_image.h"
 
 //#ifdef _WIN32
@@ -63,10 +65,10 @@ void Adren::Display::initWindow() {
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    camera.height = mode->height;
-    camera.width = mode->width;
+    camera.width = 1600;
+    camera.height = 1050;
     std::string appName = "Adrenaline Engine";
-    window = glfwCreateWindow(camera.height, camera.width, appName.c_str(), nullptr, nullptr);
+    window = glfwCreateWindow(mode->height, mode->width, appName.c_str(), nullptr, nullptr);
 
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);

@@ -68,6 +68,15 @@ void Adren::Renderer::initVulkan() {
     buffers.createUniformBuffers(swapchain.images, config.models); Adren::Tools::log("Uniform buffers created..");
     descriptor.createPool(swapchain.images); Adren::Tools::log("Descriptor pool created..");
     descriptor.createSets(textures, swapchain.images); Adren::Tools::log("Descriptor sets created..");
+
+    if (config.debug) {
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)gui.base.commandBuffer, "IMGUI COMMAND BUFFER");
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)gui.base.commandPool, "IMGUI COMMAND POOL");
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)gui.base.framebuffer, "IMGUI FRAMEBUFFER");
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)gui.base.renderpass, "IMGUI RENDER PASS");
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)processing.commandPool, "PRIMARY COMMAND POOL");
+        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderpass.handle, "MAIN RENDER PASS");
+    }
 }
 
 void Adren::Renderer::mainLoop() {

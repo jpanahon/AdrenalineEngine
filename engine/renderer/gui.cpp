@@ -11,6 +11,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include "info.h"
+#include <glm/gtc/type_ptr.hpp>
 
 void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
@@ -74,6 +75,7 @@ void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
 
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 
+    base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     Adren::Tools::log("ImGui has been initialized..");
 }
 
@@ -121,7 +123,7 @@ void Adren::GUI::newImguiFrame(GLFWwindow* window) {
 void Adren::GUI::startGUI() {
     //bool yep = true;
     //ImGui::ShowDemoWindow(&yep);
-
+    
     if (showCameraInfo) { cameraInfo(&showCameraInfo); }
     if (showRenderInfo) { renderInfo(&showRenderInfo); }
    
@@ -134,27 +136,44 @@ void Adren::GUI::startGUI() {
 
         ImGui::EndMainMenuBar();
     } 
-
+    
     viewport();
 }
 
 
 void Adren::GUI::cameraInfo(bool* open) {
     ImGui::Begin("Camera Properties", open);
-    ImGui::Text("Front: X: %.3f, Y: %.3f, Z: %.3f \n", camera.front.x, camera.front.y, camera.front.z);
-    ImGui::Text("Pos: X: %.3f, Y: %.3f, Z: %.3f \n", camera.pos.x, camera.pos.y, camera.pos.z);
-    ImGui::Text("Up: X: %.3f, Y: %.3f, Z: %.3f \n", camera.up.x, camera.up.y, camera.up.z);
-    ImGui::Text("Last X: %.f \n", camera.lastX);
-    ImGui::Text("Last Y: %.f \n", camera.lastY);
-    
-    ImGui::Separator();
-    const char* format = "%.3f";
-    ImGui::Text("Camera Speed");
-    ImGui::SliderFloat("0.001 to 100.0", &camera.speed, 0.001f, 100.0f, format);
-    ImGui::Text("Camera FOV");
-    ImGui::SliderInt("30 to 120", &camera.fov, 30, 120);
-    ImGui::Text("Camera Draw Distance (x 1000)");
-    ImGui::SliderInt("1 to 100", &camera.drawDistance, 1, 100);
+    if (ImGui::BeginTabBar("CameraTabBar")) {
+        if (ImGui::BeginTabItem("Information")) {
+            ImGui::Text("Front: X: %.3f, Y: %.3f, Z: %.3f \n", camera.front.x, camera.front.y, camera.front.z);
+            ImGui::Text("Pos: X: %.3f, Y: %.3f, Z: %.3f \n", camera.pos.x, camera.pos.y, camera.pos.z);
+            ImGui::Text("Up: X: %.3f, Y: %.3f, Z: %.3f \n", camera.up.x, camera.up.y, camera.up.z);
+            ImGui::Text("Last X: %.f \n", camera.lastX);
+            ImGui::Text("Last Y: %.f \n", camera.lastY);
+            ImGui::Text("Camera Resolution: %dx%d", camera.width, camera.height);
+            ImGui::EndTabItem();
+        }
+
+        const char* format = "%.3f";
+        if (ImGui::BeginTabItem("Viewport Settings")) {
+            ImGui::Text("Camera FOV");
+            ImGui::SliderInt("30 to 120", &camera.fov, 30, 120);
+            ImGui::Text("Camera Draw Distance (x 1000)");
+            ImGui::SliderInt("1 to 100", &camera.drawDistance, 1, 100);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Adjustment")) {
+            ImGui::InputFloat3("Camera Front", glm::value_ptr(camera.front));
+            ImGui::InputFloat3("Camera Position", glm::value_ptr(camera.pos));
+            ImGui::Text("Camera Speed");
+            ImGui::SliderFloat("0.001 to 100.0", &camera.speed, 0.001f, 100.0f, format);
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
     ImGui::End();
 }
 
@@ -197,10 +216,20 @@ void Adren::GUI::renderInfo(bool* open) {
 }
 
 void Adren::GUI::viewport() {
-    ImGui::Begin("Viewport");
-    ImTextureID vport = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    ImGui::Image(vport, ImVec2(base.width, base.height));
+    bool yep = true;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
+    ImVec2 windowSize = ImVec2(base.width, base.height);
+    
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImGui::SetWindowSize(windowSize);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    ImGui::Begin("Viewport", &yep, flags);
+    ImGui::Image((ImTextureID)base.set, ImVec2(base.width, base.height));
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 void Adren::GUI::createRenderPass() {
@@ -213,7 +242,7 @@ void Adren::GUI::createRenderPass() {
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY, base.depth);
 
     base.depth.view = images.createImageView(base.depth.image, images.depth.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-
+   
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.maxAnisotropy = 1.0f;
@@ -248,7 +277,7 @@ void Adren::GUI::createRenderPass() {
     attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+    
     VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
@@ -284,8 +313,8 @@ void Adren::GUI::createRenderPass() {
     renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
     renderPassInfo.pDependencies = dependencies.data();
 
+
     Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &renderPassInfo, nullptr, &base.renderpass));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)base.renderpass, "IMGUI RENDER PASS");
 }
 
 void Adren::GUI::createFramebuffers() {
@@ -303,7 +332,6 @@ void Adren::GUI::createFramebuffers() {
     framebufferInfo.layers = 1;
 
     Adren::Tools::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)base.framebuffer, "IMGUI FRAMEBUFFER");
 }
 
 void Adren::GUI::createCommands() {
@@ -312,7 +340,6 @@ void Adren::GUI::createCommands() {
     commandPoolInfo.queueFamilyIndex = queueFam.graphicsFamily.value();
     commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     Adren::Tools::vibeCheck("CREATED IMGUI COMMAND POOL", vkCreateCommandPool(device, &commandPoolInfo, nullptr, &base.commandPool));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)base.commandPool, "IMGUI COMMAND POOL");
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -320,19 +347,20 @@ void Adren::GUI::createCommands() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
     Adren::Tools::vibeCheck("IMGUI COMMAND BUFFER", vkAllocateCommandBuffers(device, &allocInfo, &base.commandBuffer));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)base.commandBuffer, "IMGUI COMMAND BUFFER");
+    
 }
 
-void Adren::GUI::recordGUI(VkCommandBuffer& buffer, VkDescriptorSet& set) {
+void Adren::GUI::recordGUI(VkCommandBuffer& buffer, Buffers& buffers, VkPipeline& pipeline, VkPipelineLayout& layout, uint32_t& index) {
     VkRenderPassBeginInfo renderpassInfo{};
     renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpassInfo.renderPass = base.renderpass;
     renderpassInfo.framebuffer = base.framebuffer;
+    renderpassInfo.renderArea.offset = { 0, 0 };
     renderpassInfo.renderArea.extent.width = base.width;
     renderpassInfo.renderArea.extent.height = base.height;
 
     VkClearValue clearValues[2];
-    clearValues[0].color = { { 0.119f, 0.181f, 0.254f, 0.0f } };
+    clearValues[0].color = { { 0.119f, 0.181f, 0.254f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     renderpassInfo.clearValueCount = 2;
@@ -340,7 +368,13 @@ void Adren::GUI::recordGUI(VkCommandBuffer& buffer, VkDescriptorSet& set) {
 
     vkCmdBeginRenderPass(buffer, &renderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
     
-    VkViewport viewport = { 0, (float)base.width, (float)base.height, -(float)base.height, 0, 1 };
+    VkViewport viewport{};
+    viewport.width = (float)base.width;
+    viewport.height = (float)base.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    
     VkRect2D scissor{};
     scissor.extent.width = base.width;
     scissor.extent.height = base.height;
@@ -349,6 +383,32 @@ void Adren::GUI::recordGUI(VkCommandBuffer& buffer, VkDescriptorSet& set) {
 
     vkCmdSetViewport(buffer, 0, 1, &viewport);
     vkCmdSetScissor(buffer, 0, 1, &scissor);
+
+    vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    VkBuffer vertexBuffers[] = { buffers.vertex.buffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
+
+    vkCmdBindIndexBuffer(buffer, buffers.index.buffer, 0, VK_INDEX_TYPE_UINT32);
+    Offset offset{};
+    offset.firstIndex = 0;
+    offset.vertexOffset = 0;
+    offset.textureOffset = 0;
+    offset.dynamicOffset = 0;
+    offset.modelOffset = 0;
+    offset.dynamicAlignment = buffers.dynamicAlignment;
+    for (int m = 0; m < config.models.size(); m++) {
+        offset.modelOffset += config.models[m].offset();
+        for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
+            Model::Node node = config.models[m].nodes[n];
+            config.models[m].drawNode(buffer, layout, node, descriptor.sets[index], offset, buffers.dynamicAlignment);
+            //offset.dynamicOffset += offset.modelOffset * static_cast<uint32_t>(buffers.dynamicAlignment);
+        }
+        offset.textureOffset += config.models[m].textures.size();
+        offset.dynamicOffset += static_cast<uint32_t>(buffers.dynamicAlignment);
+    }
+    
 
     vkCmdEndRenderPass(buffer);
 }

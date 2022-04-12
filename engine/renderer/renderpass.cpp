@@ -36,7 +36,6 @@ void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& 
     renderPassInfo.pDependencies = &dependency;
 
     Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &renderPassInfo, nullptr, &handle));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)handle, "MAIN RENDER PASS");
 }
 
 void Adren::Renderpass::begin(VkCommandBuffer& commandBuffer, uint32_t& index, std::vector<VkFramebuffer>& framebuffers, VkExtent2D& extent) {
@@ -48,7 +47,7 @@ void Adren::Renderpass::begin(VkCommandBuffer& commandBuffer, uint32_t& index, s
     renderpassInfo.renderArea.extent = extent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { 0.119f, 0.181f, 0.254f, 0.0f };
+    clearValues[0].color = { 0.008f, 0.008f, 0.008f, 0.0f };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     renderpassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

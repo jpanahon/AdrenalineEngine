@@ -32,7 +32,7 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instan
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     for (int i = 0; i < maxFramesInFlight; i++) {
         Adren::Tools::vibeCheck("COMMAND POOL", vkCreateCommandPool(device, &poolInfo, nullptr, &frames[i].commandPool));
-        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)frames[i].commandPool, "FRAME COMMAND POOL");
+        
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -41,7 +41,10 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instan
         allocInfo.commandBufferCount = 1;
 
         Adren::Tools::vibeCheck("ALLOCATE COMMAND BUFFERS", vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer));
-        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)frames[i].commandBuffer, "FRAME COMMAND BUFFER");
+        if (config.debug) {
+            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)frames[i].commandPool, "FRAME COMMAND POOL");
+            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)frames[i].commandBuffer, "FRAME COMMAND BUFFER");
+        }
     }
 
     VkCommandPoolCreateInfo primaryPoolInfo{};
@@ -49,7 +52,6 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instan
     primaryPoolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     primaryPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     Adren::Tools::vibeCheck("CREATED PRIMARY COMMAND POOL", vkCreateCommandPool(device, &primaryPoolInfo, nullptr, &commandPool));
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)commandPool, "PRIMARY COMMAND POOL");
 }
 
 void Adren::Processing::createSyncObjects() {
@@ -97,29 +99,6 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     */
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.handle);
-
-    VkBuffer vertexBuffers[] = { buffers.vertex.buffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-    vkCmdBindIndexBuffer(commandBuffer, buffers.index.buffer, 0, VK_INDEX_TYPE_UINT32);
-    Offset offset{};
-    offset.firstIndex = 0;
-    offset.vertexOffset = 0;
-    offset.textureOffset = 0;
-    offset.dynamicOffset = 0;
-    offset.modelOffset = 0;
-    offset.dynamicAlignment = buffers.dynamicAlignment;
-    for (int m = 0; m < config.models.size(); m++) {
-        offset.modelOffset += config.models[m].offset();
-        for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
-            Model::Node node = config.models[m].nodes[n];
-            config.models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset, buffers.dynamicAlignment);
-            //offset.dynamicOffset += offset.modelOffset * static_cast<uint32_t>(buffers.dynamicAlignment);
-        }
-        offset.textureOffset += config.models[m].textures.size();
-    }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
@@ -127,7 +106,7 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
 
     {
         if (config.enableGUI) {
-            gui.recordGUI(commandBuffer, descriptor.sets[imageIndex]);
+            gui.recordGUI(commandBuffer, buffers, pipeline.handle, pipeline.layout, imageIndex);
         }
     }
 

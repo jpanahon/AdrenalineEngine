@@ -211,6 +211,16 @@ uint32_t Model::offset() {
     }
     return offset;
 }
+glm::mat4 Model::matrix(Node node) {
+    glm::mat4 modelMatrix = node.matrix;
+    Node* parent = node.parent;
+    while (parent) {
+        modelMatrix = parent->matrix * modelMatrix;
+        parent = parent->parent;
+    }
+    return modelMatrix;
+}
+
 
 void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment) {
     if (iNode.mesh.primitives.size() > 0) {
@@ -226,7 +236,6 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
                 offset.vertexOffset += prim.vertexCount;    
             }
         }
-        offset.dynamicOffset += static_cast<uint32_t>(offset.dynamicAlignment);
     }
 
     if (iNode.children.size() > 0) {
