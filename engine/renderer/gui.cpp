@@ -13,7 +13,7 @@
 #include "info.h"
 #include <glm/gtc/type_ptr.hpp>
 
-void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
+void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -55,8 +55,6 @@ void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
     guiInfo.PhysicalDevice = physicalDevice;
     guiInfo.Device = device;
     guiInfo.Queue = graphicsQueue;
-
-
     guiInfo.QueueFamily = queueFam.graphicsFamily.value();
     guiInfo.PipelineCache = VK_NULL_HANDLE;
     guiInfo.DescriptorPool = descriptorPool;
@@ -76,12 +74,26 @@ void Adren::GUI::initImGui(GLFWwindow* window, VkSurfaceKHR& surface) {
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 
     base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    
+    if (config.debug) {
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)base.commandBuffer, "IMGUI COMMAND BUFFER");
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)base.commandPool, "IMGUI COMMAND POOL");
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)base.framebuffer, "IMGUI FRAMEBUFFER");
+        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)base.renderpass, "IMGUI RENDER PASS");
+    }
+
     Adren::Tools::log("ImGui has been initialized..");
 }
 
 void Adren::GUI::cleanup() {
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    vkDestroyCommandPool(device, base.commandPool, nullptr);
+    vkDestroySampler(device, base.sampler, nullptr);
+    vmaDestroyImage(devices.allocator, base.color.image, base.color.memory);
+    vkDestroyImageView(device, base.color.view, nullptr);
+    vmaDestroyImage(devices.allocator, base.depth.image, base.depth.memory);
+    vkDestroyImageView(device, base.depth.view, nullptr);
+    vkDestroyRenderPass(device, base.renderpass, nullptr);
+    vkDestroyFramebuffer(device, base.framebuffer, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext(); 
@@ -120,7 +132,7 @@ void Adren::GUI::newImguiFrame(GLFWwindow* window) {
     mouseHandler(window);
 }
 
-void Adren::GUI::startGUI() {
+void Adren::GUI::start() {
     //bool yep = true;
     //ImGui::ShowDemoWindow(&yep);
     
@@ -350,7 +362,7 @@ void Adren::GUI::createCommands() {
     
 }
 
-void Adren::GUI::recordGUI(VkCommandBuffer& buffer, Buffers& buffers, VkPipeline& pipeline, VkPipelineLayout& layout, uint32_t& index) {
+void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer) {
     VkRenderPassBeginInfo renderpassInfo{};
     renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpassInfo.renderPass = base.renderpass;
@@ -360,57 +372,13 @@ void Adren::GUI::recordGUI(VkCommandBuffer& buffer, Buffers& buffers, VkPipeline
     renderpassInfo.renderArea.extent.height = base.height;
 
     VkClearValue clearValues[2];
-    clearValues[0].color = { { 0.119f, 0.181f, 0.254f, 1.0f } };
+    clearValues[0].color = { 0.119f, 0.181f, 0.254f, 1.0f };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     renderpassInfo.clearValueCount = 2;
     renderpassInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(buffer, &renderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    
-    VkViewport viewport{};
-    viewport.width = (float)base.width;
-    viewport.height = (float)base.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    
-    VkRect2D scissor{};
-    scissor.extent.width = base.width;
-    scissor.extent.height = base.height;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-
-    vkCmdSetViewport(buffer, 0, 1, &viewport);
-    vkCmdSetScissor(buffer, 0, 1, &scissor);
-
-    vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-    VkBuffer vertexBuffers[] = { buffers.vertex.buffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
-
-    vkCmdBindIndexBuffer(buffer, buffers.index.buffer, 0, VK_INDEX_TYPE_UINT32);
-    Offset offset{};
-    offset.firstIndex = 0;
-    offset.vertexOffset = 0;
-    offset.textureOffset = 0;
-    offset.dynamicOffset = 0;
-    offset.modelOffset = 0;
-    offset.dynamicAlignment = buffers.dynamicAlignment;
-    for (int m = 0; m < config.models.size(); m++) {
-        offset.modelOffset += config.models[m].offset();
-        for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
-            Model::Node node = config.models[m].nodes[n];
-            config.models[m].drawNode(buffer, layout, node, descriptor.sets[index], offset, buffers.dynamicAlignment);
-            //offset.dynamicOffset += offset.modelOffset * static_cast<uint32_t>(buffers.dynamicAlignment);
-        }
-        offset.textureOffset += config.models[m].textures.size();
-        offset.dynamicOffset += static_cast<uint32_t>(buffers.dynamicAlignment);
-    }
-    
-
-    vkCmdEndRenderPass(buffer);
 }
 
 void Adren::GUI::guiStyle() {

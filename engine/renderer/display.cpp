@@ -5,18 +5,19 @@
     This handles the definitions of display.h
 */
 
+#define GLFW_INCLUDE_VULKAN
 #include "display.h"
 #include <iostream>
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include "tinygltf/stb_image.h"
 
-//#ifdef _WIN32
-//    #include <Windows.h>
-//    #include <Uxtheme.h>
-//    #define GLFW_EXPOSE_NATIVE_WIN32
-//    #include <GLFW/glfw3native.h>
-//#endif
+/*#ifdef _WIN32
+    #include <Windows.h>
+    #include <Uxtheme.h>
+    #define GLFW_EXPOSE_NATIVE_WIN32
+    #include <GLFW/glfw3native.h>
+#endif*/
 
 void Adren::Display::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     auto app = reinterpret_cast<Display*>(glfwGetWindowUserPointer(window));

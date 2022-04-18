@@ -66,16 +66,21 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = Adren::Info::inputAssembly();
 
-    VkViewport viewport = Adren::Info::viewport();
-    viewport.width = (float)swapchain.extent.width;
-    viewport.height = (float)swapchain.extent.height;
-
     VkRect2D scissor = Adren::Info::scissor();
     scissor.extent = swapchain.extent;
 
+    VkDynamicState states[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
     VkPipelineViewportStateCreateInfo viewportState = Adren::Info::viewportState();
-    viewportState.pViewports = &viewport;
-    viewportState.pScissors = &scissor;
+    viewportState.pViewports = nullptr;
+    viewportState.pScissors = nullptr;
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount = 1;
+
+    VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
+    dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicStateInfo.dynamicStateCount = 2;
+    dynamicStateInfo.pDynamicStates = states;
 
     VkPipelineRasterizationStateCreateInfo rasterizer = Adren::Info::rasterizer();
 
@@ -110,6 +115,7 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pDynamicState = &dynamicStateInfo;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = &depthStencil;

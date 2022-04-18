@@ -7,7 +7,6 @@
 */
 
 #pragma once
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
 #include "types.h"
@@ -22,12 +21,12 @@ public:
     GUI(Devices& devices, Buffers& buffers, Images& images, Descriptor& descriptor, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
         buffers(buffers), descriptor(descriptor), images(images), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
 
-    void initImGui(GLFWwindow* window, VkSurfaceKHR& surface);
+    void init(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
     void mouseHandler(GLFWwindow* window);
     void newImguiFrame(GLFWwindow* window);
-    void startGUI();
-    void recordGUI(VkCommandBuffer& buffer, Buffers& buffers, VkPipeline& pipeline, VkPipelineLayout& layout, uint32_t& index);
+    void start();
+    void beginRenderpass(VkCommandBuffer& buffer);
 
     struct Base {
         int32_t width = 1600;
@@ -67,9 +66,6 @@ private:
     VkQueue& graphicsQueue = devices.graphicsQueue;
     QueueFamilyIndices queueFam;
     VkPhysicalDevice& physicalDevice = devices.physicalDevice;
-
-
-
 
     bool rightClick = false;
 

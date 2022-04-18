@@ -4,7 +4,7 @@
 
     This initializes the Vulkan API.
 */
-
+#define GLFW_INCLUDE_VULKAN
 #define VMA_IMPLEMENTATION
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
@@ -70,10 +70,6 @@ void Adren::Renderer::initVulkan() {
     descriptor.createSets(textures, swapchain.images); Adren::Tools::log("Descriptor sets created..");
 
     if (config.debug) {
-        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)gui.base.commandBuffer, "IMGUI COMMAND BUFFER");
-        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)gui.base.commandPool, "IMGUI COMMAND POOL");
-        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)gui.base.framebuffer, "IMGUI FRAMEBUFFER");
-        Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)gui.base.renderpass, "IMGUI RENDER PASS");
         Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)processing.commandPool, "PRIMARY COMMAND POOL");
         Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderpass.handle, "MAIN RENDER PASS");
     }
@@ -83,7 +79,7 @@ void Adren::Renderer::mainLoop() {
     while (!glfwWindowShouldClose(display.window)) {
         glfwPollEvents();
         
-        if (config.enableGUI) { gui.newImguiFrame(display.window); gui.startGUI(); }
+        if (config.enableGUI) { gui.newImguiFrame(display.window); gui.start(); }
         if (camera.toggled) { buffers.updateUniformBuffer(camera, swapchain.extent); processInput(display.window, camera); }
         processing.render(buffers, pipeline, descriptor, swapchain, renderpass, gui);
     }
@@ -94,7 +90,7 @@ void Adren::Renderer::mainLoop() {
 void Adren::Renderer::run() { 
     display.initWindow();
     initVulkan();
-    if (config.enableGUI) { gui.initImGui(display.window, display.surface); }
+    if (config.enableGUI) { gui.init(display.window, display.surface); }
     mainLoop();
     cleanup();
 }
@@ -122,7 +118,7 @@ void Adren::Renderer::cleanup() {
 }
 void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
     float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
+    float deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
     float speed = (camera.speed * 10) * deltaTime;
 

@@ -6,17 +6,14 @@ void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& 
     VkAttachmentDescription colorAttachment = Adren::Info::colorAttachment(imageFormat);
     VkAttachmentDescription depthAttachment = Adren::Info::depthAttachment(depth.format);
 
-
     VkAttachmentReference colorReference{};
     colorReference.attachment = 0;
     colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    
     VkAttachmentReference depthReference{};
     depthReference.attachment = 1;
     depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
-
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
@@ -47,7 +44,7 @@ void Adren::Renderpass::begin(VkCommandBuffer& commandBuffer, uint32_t& index, s
     renderpassInfo.renderArea.extent = extent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { 0.008f, 0.008f, 0.008f, 0.0f };
+    clearValues[0].color = { 0.032f, 0.032f, 0.032f, 0.0f };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     renderpassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

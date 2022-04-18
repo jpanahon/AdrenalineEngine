@@ -124,10 +124,7 @@ void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Mode
     for (Model& model : models) {
         modelSize += model.offset();
         for (Model::Node& node : model.nodes) {
-            if (model.position != glm::vec3(1.0f)) { glm::translate(node.matrix, model.position); }
-            if (model.scale != 0.0f) { glm::scale(node.matrix, glm::vec3(model.scale)); }
-            if (model.rotationAngle != 0.0f) { glm::rotate(node.matrix, glm::radians(model.rotationAngle), model.rotationAxis); }
-            matrices.push_back(glm::mat4(1.0f));
+            matrices.push_back(node.matrix);
 
             if (node.children.size() > 0) {
                 for (Model::Node& child : node.children) {
@@ -139,6 +136,7 @@ void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Mode
 
     VkDeviceSize alignment = dynamicAlignment * modelSize;
     memcpy(dynamicUniform[index].mapped, matrices.data(), alignment);
+    vmaFlushAllocation(allocator, dynamicUniform[index].memory, alignment, sizeof(glm::mat4));
 }
 
 void Adren::Buffers::cleanup() {

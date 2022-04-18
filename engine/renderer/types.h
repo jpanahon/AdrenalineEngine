@@ -6,7 +6,6 @@
 */
 
 #pragma once
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -78,7 +77,6 @@ namespace std {
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat4 model;
 };
 
 struct QueueFamilyIndices {
@@ -125,19 +123,19 @@ struct Camera {
     float yaw = -90.0f;
     float pitch = 0.0f;
 
-    float speed = 1.0f;
+    float speed = 0.5f;
 
     int fov = 90;
     int drawDistance = 10;
 };
 
 struct Offset {
-    uint32_t firstIndex = 0;
-    uint32_t vertexOffset = 0;
-    uint32_t textureOffset = 0;
-    uint32_t dynamicOffset = 0;
-    uint32_t modelOffset = 0;
-    VkDeviceSize dynamicAlignment = 0;
+    uint32_t index = 0;
+    uint32_t vertex = 0;
+    uint32_t texture = 0;
+    uint32_t dynamic = 0;
+    uint32_t model = 0;
+    VkDeviceSize align = 0;
 };
 
 struct Buffer {

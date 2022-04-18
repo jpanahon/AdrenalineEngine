@@ -6,21 +6,20 @@
 */
 
 #include "processing.h"
+#include <cmath>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
 void Adren::Processing::cleanup() {
+    vkDestroyCommandPool(device, commandPool, nullptr);
     for (size_t i = 0; i < maxFramesInFlight; i++) {
+        vkDestroyCommandPool(device, frames[i].commandPool, nullptr);
         vkDestroySemaphore(device, frames[i].rSemaphore, nullptr);
         vkDestroySemaphore(device, frames[i].iSemaphore, nullptr);
         vkDestroyFence(device, frames[i].fence, nullptr);
-        vkEndCommandBuffer(frames[i].commandBuffer);
-        vkDestroyCommandPool(device, frames[i].commandPool, nullptr);
     }
-    
-    vkDestroyCommandPool(device, commandPool, nullptr);
 }
 
 void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instance) {
@@ -33,7 +32,6 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instan
     for (int i = 0; i < maxFramesInFlight; i++) {
         Adren::Tools::vibeCheck("COMMAND POOL", vkCreateCommandPool(device, &poolInfo, nullptr, &frames[i].commandPool));
         
-
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = frames[i].commandPool;
@@ -41,6 +39,7 @@ void Adren::Processing::createCommands(VkSurfaceKHR& surface, VkInstance& instan
         allocInfo.commandBufferCount = 1;
 
         Adren::Tools::vibeCheck("ALLOCATE COMMAND BUFFERS", vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer));
+        
         if (config.debug) {
             Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)frames[i].commandPool, "FRAME COMMAND POOL");
             Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)frames[i].commandBuffer, "FRAME COMMAND BUFFER");
@@ -88,30 +87,53 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     beginInfo.pInheritanceInfo = nullptr;
 
     //vkResetCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-    vkResetCommandPool(device, frames[currentFrame].commandPool, 0);
+    vkResetCommandPool(device, frames[currentFrame].commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
     
-    renderpass.begin(commandBuffer, imageIndex, swapchain.framebuffers, swapchain.extent);
-    /*
-    VkViewport viewport = { 0, float(swapchain.extent.height), float(swapchain.extent.width), -float(swapchain.extent.height), 0, 1 };
-    VkRect2D scissor = { {0, 0}, {uint32_t(swapchain.extent.width), uint32_t(swapchain.extent.height)} };
+    if (config.enableGUI) {
+        gui.beginRenderpass(commandBuffer);
+        VkViewport viewport{};
+        viewport.width = (float)gui.base.width;
+        viewport.height = (float)gui.base.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
 
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    */
+
+        VkRect2D scissor{};
+        scissor.extent.width = gui.base.width;
+        scissor.extent.height = gui.base.height;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.handle);
+
+        VkBuffer vertexBuffers[] = { buffers.vertex.buffer };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, buffers.index.buffer, 0, VK_INDEX_TYPE_UINT32);
+        Offset offset = {0, 0, 0, 0, 0, buffers.dynamicAlignment};
+        for (int m = 0; m < config.models.size(); m++) {
+            for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
+                Model::Node node = config.models[m].nodes[n];
+                config.models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset, buffers.dynamicAlignment);
+            }
+            offset.texture += config.models[m].textures.size();
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+    }
+
+    renderpass.begin(commandBuffer, imageIndex, swapchain.framebuffers, swapchain.extent);
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
 
-    {
-        if (config.enableGUI) {
-            gui.recordGUI(commandBuffer, buffers, pipeline.handle, pipeline.layout, imageIndex);
-        }
-    }
-
     vkEndCommandBuffer(commandBuffer);
-
 
     buffers.updateDynamicUniformBuffer(imageIndex, config.models);
     

@@ -9,20 +9,20 @@
 
 int main() {
     Config config{};
-    config.debug = true;
+    config.debug = false;
     config.enableGUI = true;
     
     Model sponza("../engine/resources/models/sponza2/Sponza.gltf");
     //Model bistro("../engine/resources/models/bistro/bistro2.gltf");
 
-    //Model scientist("../engine/resources/models/scientist/scene.gltf");
+    Model scientist("../engine/resources/models/scientist/scene.gltf");
     //scientist.rotationAngle = -90;
     //scientist.scale = 10.0f;
     //scientist.rotationAxis = ADREN_X_AXIS;
     //Model revenant("../engine/resources/models/revenant/scene.gltf");
     //revenant.position = glm::vec3(0.0f, 0.0f, -15.5f);
     //revenant.scale = 50.0f;
-    //Model deccer("../engine/resources/models/deccer/SM_Deccer_Cubes_Textured_Embedded.gltf");
+    Model deccer("../engine/resources/models/deccer/SM_Deccer_Cubes_Textured_Embedded.gltf");
     //Model batman("../engine/resources/models/batman.gltf");
     //batman.scale = 50.0f;
     //batman.rotationAngle = 90.0f;
@@ -30,7 +30,7 @@ int main() {
 
     //Model cj("../engine/resources/models/CJ/scene.gltf");
 
-    config.models = {sponza};
+    config.models = {sponza, deccer, scientist};
 
     Adren::Engine engine(config); 
 

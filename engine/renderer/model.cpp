@@ -116,8 +116,8 @@ void Model::findComponent(const tinygltf::Accessor& accessor, const tinygltf::Bu
         } break;
     }
     default:
-            std::cerr << "Index component type not supported " << accessor.componentType << "\n \n";
-            return;
+        std::cerr << "Index component type not supported " << accessor.componentType << "\n \n";
+        return;
     }
 }
 
@@ -205,12 +205,16 @@ void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, 
 }
 
 uint32_t Model::offset() {
-    uint32_t offset = nodes.size();
+    std::vector<glm::mat4> offset;
     for (Model::Node& node : nodes) {
-        offset += node.children.size();
+        offset.push_back(node.matrix);
+        for (Model::Node& child : node.children) {
+            offset.push_back(child.matrix);
+        }
     }
-    return offset;
+    return static_cast<uint32_t>(offset.size());
 }
+
 glm::mat4 Model::matrix(Node node) {
     glm::mat4 modelMatrix = node.matrix;
     Node* parent = node.parent;
@@ -221,21 +225,24 @@ glm::mat4 Model::matrix(Node node) {
     return modelMatrix;
 }
 
-
 void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment) {
     if (iNode.mesh.primitives.size() > 0) {
         for (size_t p = 0; p < iNode.mesh.primitives.size(); p++) {
             Model::Primitive& prim = iNode.mesh.primitives[p];
-;           if (prim.indexCount > 0) {
+            if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
-                const auto index = texture.index + offset.textureOffset;
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamicOffset);
+                const auto index = texture.index + offset.texture;
+
+                // Offset needs to be right. 
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamic);
+                
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
-                vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.firstIndex, offset.vertexOffset, 0);
-                offset.firstIndex += prim.indexCount;
-                offset.vertexOffset += prim.vertexCount;    
+                vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.index, offset.vertex, 0);
+                offset.index += prim.indexCount;
+                offset.vertex += prim.vertexCount;    
             }
         }
+        offset.dynamic += static_cast<uint32_t>(offset.align);
     }
 
     if (iNode.children.size() > 0) {

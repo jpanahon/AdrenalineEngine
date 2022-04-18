@@ -33,7 +33,6 @@ private:
     VkInstance instance;
     Camera camera;
 
-    float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
     Display display{instance, camera};
