@@ -93,7 +93,13 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     }
 
     uint32_t modelSize = 0;
-    for (Model& model : models) { modelSize += model.offset(); }
+    for (Model& model : models) { 
+        for (Model::Node& node : model.nodes) {
+            model.count(modelSize, node.children);
+            modelSize++;
+        }
+    }
+
     VkDeviceSize duBufferSize = dynamicAlignment * modelSize;
     uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(duBufferSize, dynamicAlignment);
     assert(uboData.model);
@@ -119,22 +125,15 @@ void Adren::Buffers::updateUniformBuffer(Camera& camera, VkExtent2D& extent) {
 }
 
 void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Model>& models) {
-    std::vector<glm::mat4> matrices;
-    uint32_t modelSize = 0;
+    std::vector<Model::Matrix> matrices;
     for (Model& model : models) {
-        modelSize += model.offset();
         for (Model::Node& node : model.nodes) {
-            matrices.push_back(node.matrix);
-
-            if (node.children.size() > 0) {
-                for (Model::Node& child : node.children) {
-                    matrices.push_back(child.matrix);
-                }
-            }
+            matrices.push_back(Model::Matrix{ node.matrix });
+            model.count(matrices, node.children);
         }
     }
 
-    VkDeviceSize alignment = dynamicAlignment * modelSize;
+    VkDeviceSize alignment = dynamicAlignment * matrices.size();
     memcpy(dynamicUniform[index].mapped, matrices.data(), alignment);
     vmaFlushAllocation(allocator, dynamicUniform[index].memory, alignment, sizeof(glm::mat4));
 }

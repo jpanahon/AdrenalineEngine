@@ -94,8 +94,8 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UboDynamicData {
-    glm::mat4 *model = nullptr;
+struct UboData {
+    glm::mat4* model = nullptr;
 };
 
 struct Frame {

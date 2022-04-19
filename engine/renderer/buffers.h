@@ -28,8 +28,8 @@ public:
 	Buffer uniform;
 	std::vector<Buffer> dynamicUniform;
 	VkDeviceSize dynamicAlignment;
+	UboData uboData;
 private:
-	UboDynamicData uboData;
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool& commandPool);
 
 	Devices& devices;

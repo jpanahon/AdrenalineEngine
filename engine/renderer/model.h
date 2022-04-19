@@ -44,6 +44,10 @@ public:
         glm::mat4 matrix;
     };
 
+    struct Matrix {
+        glm::mat4 model[4];
+    };
+
     tinygltf::Model gltf;
     std::vector<Texture> textures;
     glm::vec3 position = glm::vec3(0.0f);
@@ -55,8 +59,8 @@ public:
     std::vector<Image> images;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    uint32_t offset();
-    glm::mat4 matrix(Node node);
+    void count(uint32_t& num, const std::vector<Node>& nodes);
+    void count(std::vector<Matrix>& matrices, const std::vector<Node>& nodes);
     void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment);
 private:
     void fillTextures(tinygltf::Model& model);

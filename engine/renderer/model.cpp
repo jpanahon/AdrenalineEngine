@@ -204,25 +204,18 @@ void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, 
     }
 }
 
-uint32_t Model::offset() {
-    std::vector<glm::mat4> offset;
-    for (Model::Node& node : nodes) {
-        offset.push_back(node.matrix);
-        for (Model::Node& child : node.children) {
-            offset.push_back(child.matrix);
-        }
+void Model::count(uint32_t& num, const std::vector<Node>& nodes) {
+    for (const auto& node : nodes) {
+        count(num, node.children);
+        num++;
     }
-    return static_cast<uint32_t>(offset.size());
 }
 
-glm::mat4 Model::matrix(Node node) {
-    glm::mat4 modelMatrix = node.matrix;
-    Node* parent = node.parent;
-    while (parent) {
-        modelMatrix = parent->matrix * modelMatrix;
-        parent = parent->parent;
+void Model::count(std::vector<Matrix>& matrices, const std::vector<Node>& nodes) {
+    for (const auto& node : nodes) {
+        matrices.push_back(Matrix{ node.matrix });
+        count(matrices, node.children);
     }
-    return modelMatrix;
 }
 
 void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment) {
@@ -232,10 +225,7 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
             if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
                 const auto index = texture.index + offset.texture;
-
-                // Offset needs to be right. 
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamic);
-                
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
                 vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.index, offset.vertex, 0);
                 offset.index += prim.indexCount;

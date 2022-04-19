@@ -26,6 +26,8 @@ public:
         for (auto imageView : views) {
             vkDestroyImageView(device, imageView, nullptr);
         }
+
+        vkDestroySwapchainKHR(device, handle, nullptr);
     }
 
     void create(VkSurfaceKHR& surface);
