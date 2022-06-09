@@ -101,7 +101,7 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
         bufferInfo.range = sizeof(UniformBufferObject);
 
         VkDescriptorBufferInfo dynamicBufferInfo{};
-        dynamicBufferInfo.buffer = buffers.dynamicUniform[i].buffer;
+        dynamicBufferInfo.buffer = buffers.dynamicUniform.buffer;
         dynamicBufferInfo.offset = 0;
         dynamicBufferInfo.range = sizeof(glm::mat4);
 

@@ -8,7 +8,6 @@
 #pragma once
 #include "gui.h"
 
-
 namespace Adren {
 class Processing {
 public:
@@ -26,7 +25,7 @@ private:
     Config& config;
     Devices& devices;
     VkDevice& device = devices.device;
-    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    VkPhysicalDevice& gpu = devices.gpu;
     VkQueue& graphicsQueue = devices.graphicsQueue;
     VkQueue& presentQueue = devices.presentQueue;
     std::vector<VkCommandBuffer> commandBuffers;

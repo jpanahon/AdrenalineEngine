@@ -43,7 +43,7 @@ bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surf
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
-void Adren::Devices::pickPhysicalDevice() {
+void Adren::Devices::pickGPU() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -56,18 +56,18 @@ void Adren::Devices::pickPhysicalDevice() {
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device, surface)) {
-            physicalDevice = device;
+            gpu = device;
             break;
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (gpu == VK_NULL_HANDLE) {
         throw std::runtime_error("Failed to find a suitable GPU!");
     }
 }
 
 void Adren::Devices::createLogicalDevice() {
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(gpu, surface);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
@@ -102,20 +102,19 @@ void Adren::Devices::createLogicalDevice() {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (debug) {
+#ifdef DEBUG
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
+#else
         createInfo.enabledLayerCount = 0;
-    }
+#endif
     createInfo.pNext = &descriptorIndexing;
     
-    Adren::Tools::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+    Adren::Tools::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(gpu, &createInfo, nullptr, &device));
     
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
-
 
 std::vector<const char*> Adren::Devices::getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
@@ -124,14 +123,14 @@ std::vector<const char*> Adren::Devices::getRequiredExtensions() {
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     
-    if (debug) {
+#ifdef DEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
+#endif
 
     return extensions;
 }
-
-bool Adren::Devices::checkValidationLayerSupport() {
+#ifdef DEBUG
+bool Adren::Devices::checkDebugSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -155,6 +154,7 @@ bool Adren::Devices::checkValidationLayerSupport() {
 
     return true;
 }
+#endif
 
 void Adren::Devices::createAllocator() {
     VmaVulkanFunctions vulkanFunctions{};
@@ -163,9 +163,10 @@ void Adren::Devices::createAllocator() {
 
     VmaAllocatorCreateInfo allocatorInfo{};
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
-    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.physicalDevice = gpu;
     allocatorInfo.device = device;
     allocatorInfo.instance = instance;
+    allocatorInfo.preferredLargeHeapBlockSize = 0;
     allocatorInfo.pVulkanFunctions = &vulkanFunctions;
     vmaCreateAllocator(&allocatorInfo, &allocator);
 }

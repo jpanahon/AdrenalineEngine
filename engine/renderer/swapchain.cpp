@@ -37,7 +37,7 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
 }
 
 void Adren::Swapchain::create(VkSurfaceKHR& surface) {
-    SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(physicalDevice, surface);
+    SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(gpu, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -59,7 +59,7 @@ void Adren::Swapchain::create(VkSurfaceKHR& surface) {
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(gpu, surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {

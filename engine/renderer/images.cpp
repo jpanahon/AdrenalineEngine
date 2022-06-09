@@ -119,7 +119,7 @@ void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& 
         for (size_t t = 0; t < model.textures.size(); t++) {
             Model::Texture texture = model.textures[t];
             int32_t index = model.textures[t].index;
-            Model::Image image = model.images[t];
+            Model::glTFImage image = model.images[t];
 
             Buffer staging;
             buffers.createBuffer(allocator, image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -142,10 +142,6 @@ void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& 
             textures.push_back(texture);
         }
     }
-
-    if (textures.size() < 256) {
-        size_t size = 256 - textures.size();
-    }
 }
 
 void Images::createDepthResources(VkExtent2D extent) {
@@ -154,7 +150,7 @@ void Images::createDepthResources(VkExtent2D extent) {
     VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(gpu, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             depth.format = format; break;

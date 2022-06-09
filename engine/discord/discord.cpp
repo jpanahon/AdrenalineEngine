@@ -18,7 +18,7 @@ void Adren::RPC::initialize() {
 void Adren::RPC::update() {
     DiscordRichPresence rpc;
     memset(&rpc, 0, sizeof(rpc));
-    rpc.state = "Testing..";
+    rpc.state = "Checking output of engine.";
     rpc.details = "Updating engine";
     rpc.startTimestamp = std::time(0);
     rpc.largeImageKey = "adren2";

@@ -6,6 +6,7 @@
 */
 
 #pragma once
+#include "config.h"
 #include "model.h"
 #include "types.h"
 #include "buffers.h"
@@ -26,7 +27,7 @@ private:
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, VkCommandPool& commandPool);
 	Devices& devices;
 	VkDevice& device = devices.device;
-	VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+	VkPhysicalDevice& gpu = devices.gpu;
 	VkQueue& graphicsQueue = devices.graphicsQueue;
 	Buffers& buffers;
 	VmaAllocator& allocator = devices.allocator;

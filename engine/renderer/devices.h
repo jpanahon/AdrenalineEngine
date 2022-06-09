@@ -19,12 +19,14 @@ public:
     Devices(bool& debug, VkInstance& instance, VkSurfaceKHR& surface) : debug(debug), instance(instance), surface(surface) {}
 
     void cleanup() { vkDestroyDevice(device, nullptr); vmaDestroyAllocator(allocator); }
-    void pickPhysicalDevice();
+    void pickGPU();
     void createLogicalDevice();
     void createAllocator();
     std::vector<const char*> getRequiredExtensions();
-    bool checkValidationLayerSupport();
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;  
+#ifdef DEBUG
+    bool checkDebugSupport();
+#endif
+    VkPhysicalDevice gpu = VK_NULL_HANDLE;  
     VkDevice device = VK_NULL_HANDLE;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     VkQueue presentQueue = VK_NULL_HANDLE;

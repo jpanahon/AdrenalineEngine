@@ -5,13 +5,12 @@
 namespace Adren {
 class Renderpass {
 public:
-	Renderpass(Devices& devices) : devices(devices) {}
+	Renderpass(Devices& devices) : device(devices.device) {}
 
 	void create(Image& depth, VkFormat& imageFormat, VkInstance& instance);
 	void begin(VkCommandBuffer& commandBuffer, uint32_t& index, std::vector<VkFramebuffer>& framebuffers, VkExtent2D& extent);
 	VkRenderPass handle = VK_NULL_HANDLE;
 private:
-	Devices& devices;
-	VkDevice& device = devices.device;
+	VkDevice& device;
 };
 }

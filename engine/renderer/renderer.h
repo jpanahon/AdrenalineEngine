@@ -9,42 +9,46 @@
 #include <iostream>
 #include <vector>
 
+#include "config.h"
 #include "model.h"
-#include "display.h"
+#include "camera.h"
 #include "debugging.h"
 #include "processing.h" // Has all the other components included
 
 namespace Adren {
 class Renderer {
 public:
-    Renderer(Config& config) : config(config) {}
+    Renderer(Config& config, GLFWwindow* window) : config(config), window(window) {}
 
-    void run();
+    void init(GLFWwindow* window);
+    void cleanup();
+    void process(GLFWwindow* window);
+    void wait() { vkDeviceWaitIdle(devices.device); }
+    Camera camera;
+    GUI gui{devices, buffers, images, swapchain, instance, camera, config}; 
 private:
     void createInstance();
     void initVulkan();
     void processInput(GLFWwindow* window, Camera& camera);
-    void mainLoop();
-    void cleanup();
 
     Config& config;
     std::vector<Model::Texture> textures;
     
     VkInstance instance;
-    Camera camera;
-
+    VkSurfaceKHR surface;
+    GLFWwindow* window;
     float lastFrame = 0.0f;
 
-    Display display{instance, camera};
-    Devices devices{config.debug, instance, display.surface};
+    Devices devices{config.debug, instance, surface};
+#ifdef DEBUG
     Debugger debugging{config.debug, instance};
+#endif
     Buffers buffers{devices};
-    Swapchain swapchain{devices, display.window, config};
+    Swapchain swapchain{devices, window, config};
     Images images{config, devices, buffers};
     Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{devices, camera, config, display.window};
-    GUI gui{devices, buffers, images, descriptor, swapchain, instance, camera, config}; 
+    Processing processing{devices, camera, config, window};
 };
 }

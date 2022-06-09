@@ -12,9 +12,9 @@ namespace Adren {
 class Debugger {
 public:
     
-    Debugger(bool& debug, VkInstance& instance) : debug(debug), instance(instance) {}
+    Debugger(VkInstance& instance) : instance(instance) {}
 
-    void cleanup() { if (debug) { destroyUtils(instance, debugMessenger, nullptr); } }
+    void cleanup() { destroyUtils(instance, debugMessenger, nullptr); }
     
     VkResult createUtils(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger); 
     void destroyUtils(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator); 
@@ -25,7 +25,6 @@ public:
     
     static VKAPI_ATTR VkBool32 VKAPI_CALL callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 private:
-    bool& debug;
     VkInstance& instance;
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 }; 

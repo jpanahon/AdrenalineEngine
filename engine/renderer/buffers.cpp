@@ -16,37 +16,35 @@ void Adren::Buffers::createModelBuffers(std::vector<Model>& models, VkCommandPoo
         vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
     }
 
-    VkDeviceSize vBufferSize = sizeof(vertices[0]) * vertices.size();
+    vertex.size = sizeof(vertices[0]) * vertices.size();
     Buffer vStaging;
-    createBuffer(allocator, vBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vStaging, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    createBuffer(allocator, vertex.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vStaging, VMA_MEMORY_USAGE_AUTO);
 
-    void* vData;
-    vmaMapMemory(allocator, vStaging.memory, &vData);
-    memcpy(vData, vertices.data(), (size_t)vBufferSize);
+    vmaMapMemory(allocator, vStaging.memory, &vStaging.mapped);
+    memcpy(vStaging.mapped, vertices.data(), (size_t)vertex.size);
     vmaUnmapMemory(allocator, vStaging.memory);
 
-    createBuffer(allocator, vBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    createBuffer(allocator, vertex.size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex, VMA_MEMORY_USAGE_GPU_ONLY);
 
-    copyBuffer(vStaging.buffer, vertex.buffer, vBufferSize, commandPool);
+    copyBuffer(vStaging.buffer, vertex.buffer, vertex.size, commandPool);
 
     vmaDestroyBuffer(allocator, vStaging.buffer, vStaging.memory);
 
-    VkDeviceSize iBufferSize = sizeof(indices[0]) * indices.size();
+    index.size = sizeof(indices[0]) * indices.size();
 
     Buffer iStaging;
-    createBuffer(allocator, iBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, iStaging, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    createBuffer(allocator, index.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, iStaging, VMA_MEMORY_USAGE_AUTO);
 
-    void* iData;
-    vmaMapMemory(allocator, iStaging.memory, &iData);
-    memcpy(iData, indices.data(), (size_t)iBufferSize);
+    vmaMapMemory(allocator, iStaging.memory, &iStaging.mapped);
+    memcpy(iStaging.mapped, indices.data(), (size_t)index.size);
     vmaUnmapMemory(allocator, iStaging.memory);
 
-    createBuffer(allocator, iBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    createBuffer(allocator, index.size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index, VMA_MEMORY_USAGE_GPU_ONLY);
-    copyBuffer(iStaging.buffer, index.buffer, iBufferSize, commandPool);
+    copyBuffer(iStaging.buffer, index.buffer, index.size, commandPool);
 
     vmaDestroyBuffer(allocator, iStaging.buffer, iStaging.memory);
 }
@@ -77,19 +75,19 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
 
 void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model>& models) {
     UniformBufferObject ubo;
-    VkDeviceSize uBufferSize = sizeof(ubo);
+    uniform.size = sizeof(ubo);
 
-    createBuffer(allocator, uBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    createBuffer(allocator, uniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         uniform, VMA_MEMORY_USAGE_GPU_ONLY);
     vmaMapMemory(allocator, uniform.memory, &uniform.mapped);
-    memcpy(uniform.mapped, &ubo, uBufferSize);
+    memcpy(uniform.mapped, &ubo, uniform.size);
 
-    VkPhysicalDeviceProperties physicalDeviceProperties{};
-    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-    VkDeviceSize minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
-    dynamicAlignment = sizeof(glm::mat4);
+    VkPhysicalDeviceProperties gpuProperties{};
+    vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
+    VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
+    dynamicUniform.align = sizeof(glm::mat4);
     if (minUboAlignment > 0) {
-        dynamicAlignment = (dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
+        dynamicUniform.align = (dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
 
     uint32_t modelSize = 0;
@@ -100,17 +98,13 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
         }
     }
 
-    VkDeviceSize duBufferSize = dynamicAlignment * modelSize;
-    uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(duBufferSize, dynamicAlignment);
+    dynamicUniform.size = dynamicUniform.align * modelSize;
+    uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(dynamicUniform.size, dynamicUniform.align);
     assert(uboData.model);
 
-    dynamicUniform.resize(images.size());
-
-    for (size_t i = 0; i < images.size(); i++) {
-        createBuffer(allocator, duBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform[i], VMA_MEMORY_USAGE_CPU_TO_GPU);
-        vmaMapMemory(allocator, dynamicUniform[i].memory, &dynamicUniform[i].mapped);
-        memcpy(dynamicUniform[i].mapped, uboData.model, dynamicAlignment * modelSize);
-    }
+    createBuffer(allocator, dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform, VMA_MEMORY_USAGE_AUTO);
+    vmaMapMemory(allocator, dynamicUniform.memory, &dynamicUniform.mapped);
+    memcpy(dynamicUniform.mapped, uboData.model, dynamicUniform.size);
 }
 
 void Adren::Buffers::updateUniformBuffer(Camera& camera, VkExtent2D& extent) {
@@ -124,18 +118,18 @@ void Adren::Buffers::updateUniformBuffer(Camera& camera, VkExtent2D& extent) {
     memcpy(uniform.mapped, &ubo, sizeof(ubo));
 }
 
-void Adren::Buffers::updateDynamicUniformBuffer(uint32_t index, std::vector<Model>& models) {
-    std::vector<Model::Matrix> matrices;
+void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model>& models) {
+    std::vector<glm::mat4> matrices;
     for (Model& model : models) {
         for (Model::Node& node : model.nodes) {
-            matrices.push_back(Model::Matrix{ node.matrix });
+            matrices.push_back(node.matrix);
             model.count(matrices, node.children);
         }
     }
 
-    VkDeviceSize alignment = dynamicAlignment * matrices.size();
-    memcpy(dynamicUniform[index].mapped, matrices.data(), alignment);
-    vmaFlushAllocation(allocator, dynamicUniform[index].memory, alignment, sizeof(glm::mat4));
+    VkDeviceSize alignment = dynamicUniform.align * matrices.size();
+    memcpy(dynamicUniform.mapped, matrices.data(), alignment);
+    vmaFlushAllocation(allocator, dynamicUniform.memory, alignment, sizeof(glm::mat4));
 }
 
 void Adren::Buffers::cleanup() {
@@ -147,8 +141,6 @@ void Adren::Buffers::cleanup() {
     vmaDestroyBuffer(allocator, uniform.buffer, uniform.memory);
     vmaUnmapMemory(allocator, uniform.memory);
 
-    for (Buffer& buffer : dynamicUniform) {
-        vmaDestroyBuffer(allocator, buffer.buffer, buffer.memory);
-        vmaUnmapMemory(allocator, buffer.memory);
-    }
+    vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
+    vmaUnmapMemory(allocator, dynamicUniform.memory);
 }

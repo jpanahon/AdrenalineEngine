@@ -13,6 +13,7 @@
 #include "model.h"
 #include "tools.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 Model::Model(std::string modelPath) {
     tinygltf::TinyGLTF tinyGLTF;
@@ -35,7 +36,7 @@ Model::Model(std::string modelPath) {
         tinygltf::Scene scene = gltf.scenes[0];
         for (size_t i = 0; i < scene.nodes.size(); i++) {
             const tinygltf::Node node = gltf.nodes[scene.nodes[i]];
-            fillNode(node, gltf, nullptr);
+            fillNode(node, gltf, nullptr, glm::mat4(1.0f));
         }
     }
 };
@@ -121,27 +122,53 @@ void Model::findComponent(const tinygltf::Accessor& accessor, const tinygltf::Bu
     }
 }
 
-void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, Node* parent) {
-    Node node{};
-    node.matrix = glm::mat4(1.0f);
+glm::mat4 Model::matrix() {
+    glm::mat4 matrix(1.0f);
+    
+    for (Node& node : nodes) {
+        matrix = node.matrix;
+        Node* parent = node.parent;
+        
+        while (parent) {
+            matrix = parent->matrix * matrix;
+            parent = parent->parent;
+        }
+    }
 
-    if (iNode.translation.size() == 3) {
-        node.matrix = glm::translate(node.matrix, glm::vec3(glm::make_vec3(iNode.translation.data())));
+    return matrix;
+}
+
+glm::mat4 Model::getMatrix(const tinygltf::Node& node, glm::mat4x4& base) {
+    if (node.matrix.size() == 16) {
+        return base * glm::mat4x4(glm::make_mat4x4(node.matrix.data()));
     }
-    if (iNode.rotation.size() == 4) {
-        glm::quat q = glm::make_quat(iNode.rotation.data());
-        node.matrix *= glm::mat4(q);
+    else {
+        auto translation = glm::vec3(0.0f);
+        auto rotation = glm::quat();
+        auto size = glm::vec3(1.0f);
+
+        if (node.translation.size() == 3) {
+            translation = glm::make_vec3(node.translation.data());
+        }
+
+        if (node.rotation.size() == 4) {
+            rotation = glm::make_quat(node.rotation.data());
+        }
+
+        if (node.scale.size() == 3) {
+            size = glm::make_vec3(node.scale.data());
+        } 
+
+        return base * glm::translate(glm::mat4(1.0f), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0f), size);
     }
-    if (iNode.scale.size() == 3) {
-        node.matrix = glm::scale(node.matrix, glm::vec3(glm::make_vec3(iNode.scale.data())));
-    }
-    if (iNode.matrix.size() == 16) {
-        node.matrix = glm::make_mat4x4(iNode.matrix.data());
-    };
+}
+void Model::fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, Node* parent, glm::mat4& matrix) {
+    Node node{};
+    node.matrix = getMatrix(iNode, matrix);
 
     if (iNode.children.size() > 0) {
         for (size_t i = 0; i < iNode.children.size(); i++) {
-            fillNode(model.nodes[iNode.children[i]], model, &node);
+            fillNode(model.nodes[iNode.children[i]], model, &node, matrix);
         }
     }
 
@@ -211,17 +238,16 @@ void Model::count(uint32_t& num, const std::vector<Node>& nodes) {
     }
 }
 
-void Model::count(std::vector<Matrix>& matrices, const std::vector<Node>& nodes) {
+void Model::count(std::vector<glm::mat4>& matrices, const std::vector<Node>& nodes) {
     for (const auto& node : nodes) {
-        matrices.push_back(Matrix{ node.matrix });
+        matrices.push_back(node.matrix);
         count(matrices, node.children);
     }
 }
 
-void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset, VkDeviceSize& dynAlignment) {
+void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& iNode, VkDescriptorSet& set, Offset& offset) {
     if (iNode.mesh.primitives.size() > 0) {
-        for (size_t p = 0; p < iNode.mesh.primitives.size(); p++) {
-            Model::Primitive& prim = iNode.mesh.primitives[p];
+        for (Primitive& prim : iNode.mesh.primitives) {
             if (prim.indexCount > 0) {
                 Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
                 const auto index = texture.index + offset.texture;
@@ -229,15 +255,15 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
                 vkCmdDrawIndexed(commandBuffer, prim.indexCount, 1, offset.index, offset.vertex, 0);
                 offset.index += prim.indexCount;
-                offset.vertex += prim.vertexCount;    
+                offset.vertex += prim.vertexCount;
             }
         }
-        offset.dynamic += static_cast<uint32_t>(offset.align);
     }
 
     if (iNode.children.size() > 0) {
         for (size_t i = 0; i < iNode.children.size(); i++) {
-            drawNode(commandBuffer, pipelineLayout, iNode.children[i], set, offset, dynAlignment);
+            offset.dynamic += static_cast<uint32_t>(offset.align);
+            drawNode(commandBuffer, pipelineLayout, iNode.children[i], set, offset);
         }
     }
 }

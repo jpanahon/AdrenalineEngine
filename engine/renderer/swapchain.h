@@ -45,7 +45,7 @@ public:
 private:
     Devices& devices;
     VkDevice& device = devices.device;
-    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    VkPhysicalDevice& gpu = devices.gpu;
     Config& config;
     GLFWwindow* window;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

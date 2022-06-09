@@ -6,19 +6,29 @@
 */
 
 #include "engine/adrenaline.h"
+#define DEBUG
 
 int main() {
     Config config{};
-    config.debug = true;
-    config.enableGUI = true;
     
-    Model sponza("../engine/resources/models/sponza2/Sponza.gltf");
+    Model sponza("../engine/resources/models/sponza/Sponza.gltf");
 
-    Model scientist("../engine/resources/models/scientist/scene.gltf");
+    //Model newSponza("../engine/resources/models/newsponza/NewSponza_Main_Blender_glTF.gltf");
+
+    //Model scientist("../engine/resources/models/scientist/scene.gltf");
+    //scientist.scale = 10.0f;
+    //scientist.rotationAngle = -90.0f;
+    //scientist.rotationAxis = ADREN_Y_AXIS;
+
+    // Model deccer("../engine/resources/models/deccer/SM_Deccer_Cubes_Textured_Embedded.gltf");
     
-    Model deccer("../engine/resources/models/deccer/SM_Deccer_Cubes_Textured_Embedded.gltf");
+    //Model batman("../engine/resources/models/batman.gltf");
+
+    //Model loba("../engine/resources/models/loba/scene.gltf");
     
-    config.models = {sponza, deccer, scientist};
+    //Model cj("../engine/resources/models/CJ/scene.gltf");
+
+    config.models = {sponza};
 
     Adren::Engine engine(config); 
 

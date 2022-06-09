@@ -10,6 +10,7 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_QUAT_DATA_XYZW
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -95,7 +96,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UboData {
-    glm::mat4* model = nullptr;
+    glm::mat4 *model = nullptr;
 };
 
 struct Frame {
@@ -104,29 +105,6 @@ struct Frame {
     VkFence fence;
     VkSemaphore iSemaphore;
     VkSemaphore rSemaphore;
-};
-
-struct Camera {
-    bool toggled = true;
-    bool firstMouse = true;
-
-    glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.3f);
-    glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    int32_t height;
-    int32_t width; 
-
-    double lastX = width / 2;
-    double lastY = height / 2;
-
-    float yaw = -90.0f;
-    float pitch = 0.0f;
-
-    float speed = 0.5f;
-
-    int fov = 90;
-    int drawDistance = 10;
 };
 
 struct Offset {
@@ -141,15 +119,9 @@ struct Offset {
 struct Buffer {
     VkBuffer buffer;
     VmaAllocation memory;
+    VkDeviceSize size = 0;
+    VkDeviceSize align = 0;
     void* mapped;
-};
-
-class Model;
-
-struct Config {
-    std::vector<Model> models;
-    bool debug = false;
-    bool enableGUI = true;
 };
 
 struct Image {

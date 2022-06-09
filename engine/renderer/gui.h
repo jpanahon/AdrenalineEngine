@@ -1,9 +1,9 @@
 /*  
-	display.h
+	gui.h
 	Adrenaline Engine
 	
-	Handles what is shown on screen.
-	
+	This header file has the definitions for the class that handles the graphical user interface.
+    It depends on the device, buffer, images, and swapchain functions.
 */
 
 #pragma once
@@ -18,19 +18,17 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices& devices, Buffers& buffers, Images& images, Descriptor& descriptor, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
-        buffers(buffers), descriptor(descriptor), images(images), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
+    GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
+        buffers(buffers), images(images), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
 
     void init(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
     void mouseHandler(GLFWwindow* window);
-    void newImguiFrame(GLFWwindow* window);
-    void start();
-    void beginRenderpass(VkCommandBuffer& buffer);
+    void newFrame(GLFWwindow* window);
+    void viewport();
+    void beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer vertex, Buffer index);
 
     struct Base {
-        int32_t width = 1600;
-        int32_t height = 1050;
         VkRenderPass renderpass;
         VkCommandPool commandPool;
         Image color, depth;
@@ -42,14 +40,12 @@ public:
     } base;
 
 private:
-    void cameraInfo(bool* open);
-    void renderInfo(bool* open);
-    void viewport();
-    void guiStyle();
+    
     void createCommands();
     void createRenderPass();
     void createFramebuffers();
-    VkDescriptorSet vport;
+    void resize();
+    
 
     Devices& devices;
     Buffers& buffers;
@@ -57,7 +53,6 @@ private:
     Swapchain& swapchain;
     Images& images;
 
-    Config& config;
     Camera& camera;
 
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
@@ -65,7 +60,7 @@ private:
     VkInstance& instance;
     VkQueue& graphicsQueue = devices.graphicsQueue;
     QueueFamilyIndices queueFam;
-    VkPhysicalDevice& physicalDevice = devices.physicalDevice;
+    VkPhysicalDevice& gpu = devices.gpu;
 
     bool rightClick = false;
 
