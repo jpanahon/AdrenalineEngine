@@ -4,6 +4,7 @@
  
     This allows Vulkan to spit out errors.
 */
+
 #define GLFW_INCLUDE_VULKAN
 #include "debugging.h"
 #include "tools.h"

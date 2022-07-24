@@ -11,11 +11,13 @@
 namespace Adren {
 class Descriptor {
 public:
-	Descriptor(Devices& devices, Buffers& buffers) : devices(devices), buffers(buffers) {}
+	Descriptor(Devices& devices, Buffers& buffers) : device(devices.device), buffers(buffers) {}
 
 	void createLayout(std::vector<Model>& models);
 	void createPool(std::vector<VkImage>& images);
 	void createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images);
+
+	void cleanup();
 
 	std::vector<VkDescriptorSet> sets;
 	VkDescriptorSetLayout layout = VK_NULL_HANDLE;
@@ -24,7 +26,6 @@ public:
 private:
 	void fillWrites(std::array<VkWriteDescriptorSet, 4>& write, int index, VkDescriptorSet& dSet, int binding, VkDescriptorType type, size_t& count);
 	Buffers& buffers;
-	Devices& devices;
-	VkDevice& device = devices.device;
+	VkDevice& device;
 };
 }

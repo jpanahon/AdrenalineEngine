@@ -6,12 +6,10 @@ void Adren::Editor::start() {
     //ImGui::ShowDemoWindow(&yep);
 
     if (showCameraInfo) { cameraInfo(&showCameraInfo); }
-    if (showRenderInfo) { renderInfo(&showRenderInfo); }
 
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Debug")) {
             ImGui::MenuItem("Camera Properties", " ", &showCameraInfo);
-            ImGui::MenuItem("Rendering Information", " ", &showRenderInfo);
             ImGui::EndMenu();
         }
 
@@ -21,8 +19,6 @@ void Adren::Editor::start() {
 
         ImGui::EndMainMenuBar();
     }
-
-    viewport();
 }
 
 void Adren::Editor::cameraInfo(bool* open) {
@@ -63,7 +59,8 @@ void Adren::Editor::cameraInfo(bool* open) {
 
 
 void Adren::Editor::importModel() {
-    
+    std::string path = "../engine/resources/models/sponza/Sponza.gltf";
+    modelPaths.push_back(path);
 }
 
 void Adren::Editor::style() {

@@ -16,7 +16,8 @@ class Devices;
 
 class Swapchain {
 public:
-    Swapchain(Devices& devices, GLFWwindow* window, Config& config) : devices(devices), window(window), config(config) {}
+    Swapchain(Devices& devices, GLFWwindow* window) : window(window), 
+        device(devices.device), gpu(devices.gpu) {}
 
     void cleanup() {
         for (auto framebuffer : framebuffers) {
@@ -43,10 +44,8 @@ public:
     VkFormat imgFormat;
     uint32_t imageCount;
 private:
-    Devices& devices;
-    VkDevice& device = devices.device;
-    VkPhysicalDevice& gpu = devices.gpu;
-    Config& config;
+    VkDevice& device;
+    VkPhysicalDevice& gpu;
     GLFWwindow* window;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);

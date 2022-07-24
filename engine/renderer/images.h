@@ -14,7 +14,9 @@
 namespace Adren {
 class Images {
 public:
-	Images(Config& config, Devices& devices, Buffers& buffers) : config(config), devices(devices), buffers(buffers) {}
+	Images(std::vector<Model>& models, Devices& devices, Buffers& buffers) : models(models), 
+		device(devices.device), buffers(buffers), gpu(devices.gpu), 
+		graphicsQueue(devices.graphicsQueue), allocator(devices.allocator) {}
 
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image);
@@ -25,12 +27,11 @@ public:
 private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool& commandPool);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, VkCommandPool& commandPool);
-	Devices& devices;
-	VkDevice& device = devices.device;
-	VkPhysicalDevice& gpu = devices.gpu;
-	VkQueue& graphicsQueue = devices.graphicsQueue;
+	VkDevice& device;
+	VkPhysicalDevice& gpu;
+	VkQueue& graphicsQueue;
 	Buffers& buffers;
-	VmaAllocator& allocator = devices.allocator;
-	Config& config;
+	VmaAllocator& allocator;
+	std::vector<Model>& models;
 };
 }

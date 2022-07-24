@@ -4,6 +4,7 @@
 
     This initializes the Vulkan API.
 */
+
 #define GLFW_INCLUDE_VULKAN
 #define VMA_IMPLEMENTATION
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
@@ -63,15 +64,15 @@ void Adren::Renderer::initVulkan() {
     swapchain.createImageViews(images); Adren::Tools::log("Image views created..");
     images.createDepthResources(swapchain.extent); Adren::Tools::log("Depth resources created..");
     renderpass.create(images.depth, swapchain.imgFormat, instance); Adren::Tools::log("Main render pass created..");
-    descriptor.createLayout(config.models); Adren::Tools::log("Descriptor set layout created..");
+    descriptor.createLayout(models); Adren::Tools::log("Descriptor set layout created..");
     pipeline.create(swapchain, descriptor.layout, renderpass.handle); Adren::Tools::log("Graphics pipeline created..");
     processing.createCommands(surface, instance); Adren::Tools::log("Command pool and buffers created..");
     processing.createSyncObjects(); Adren::Tools::log("Sync objects created..");
     swapchain.createFramebuffers(images.depth, renderpass.handle); Adren::Tools::log("Main framebuffers created..");
     images.loadTextures(textures, processing.commandPool); Adren::Tools::log("Model textures created..");
-    buffers.createModelBuffers(config.models, processing.commandPool); Adren::Tools::log("Index buffers created..");
-    buffers.createUniformBuffers(swapchain.images, config.models); Adren::Tools::log("Uniform buffers created..");
-    buffers.updateDynamicUniformBuffer(config.models);
+    buffers.createModelBuffers(models, processing.commandPool); Adren::Tools::log("Index buffers created..");
+    buffers.createUniformBuffers(swapchain.images, models); Adren::Tools::log("Uniform buffers created..");
+    buffers.updateDynamicUniformBuffer(models);
     descriptor.createPool(swapchain.images); Adren::Tools::log("Descriptor pool created..");
     descriptor.createSets(textures, swapchain.images); Adren::Tools::log("Descriptor sets created..");
 
@@ -92,15 +93,17 @@ void Adren::Renderer::init(GLFWwindow* window) {
 }
 
 void Adren::Renderer::cleanup() {
+    buffers.cleanup();
     processing.cleanup();
     swapchain.cleanup();
+    descriptor.cleanup();
     gui.cleanup(); 
 
 #ifdef DEBUG 
     debugging.cleanup();
 #endif
 
-    for (auto& m : config.models) {
+    for (auto& m : models) {
         for (auto& tex : m.textures) {
             vkDestroyImageView(devices.device, tex.view, nullptr);
             vmaDestroyImage(devices.allocator, tex.image, tex.memory);
@@ -115,6 +118,48 @@ void Adren::Renderer::cleanup() {
 
     vkDestroyInstance(instance, nullptr);
 }
+
+void Adren::Renderer::reloadScene(std::vector<Model>& models) {
+    /*
+        This function would be the basis of model loading, as buffers and descriptors get updated
+        when there is a new model. This is experimental and may be causing lots of performance issues
+
+        What this does is re-render the entire screen when new elements are in. 
+    */
+    
+    vmaDestroyBuffer(devices.allocator, buffers.index.buffer, buffers.index.memory);
+    vmaDestroyBuffer(devices.allocator, buffers.vertex.buffer, buffers.vertex.memory);
+    vmaDestroyBuffer(devices.allocator, buffers.dynamicUniform.buffer, buffers.dynamicUniform.memory);
+
+    buffers.createModelBuffers(models, processing.commandPool);
+
+    VkPhysicalDeviceProperties gpuProperties{};
+    vkGetPhysicalDeviceProperties(devices.gpu, &gpuProperties);
+    VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
+    buffers.dynamicUniform.align = sizeof(glm::mat4);
+    if (minUboAlignment > 0) {
+        buffers.dynamicUniform.align = (buffers.dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
+    }
+
+    uint32_t modelSize = 0;
+    for (Model& model : models) {
+        for (Model::Node& node : model.nodes) {
+            model.count(modelSize, node.children);
+            modelSize++;
+        }
+    }
+
+    buffers.dynamicUniform.size = buffers.dynamicUniform.align * modelSize;
+    buffers.uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(buffers.dynamicUniform.size, buffers.dynamicUniform.align);
+    assert(buffers.uboData.model);
+
+    buffers.createBuffer(devices.allocator, buffers.dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, buffers.dynamicUniform, VMA_MEMORY_USAGE_AUTO);
+    vmaMapMemory(devices.allocator, buffers.dynamicUniform.memory, &buffers.dynamicUniform.mapped);
+    memcpy(buffers.dynamicUniform.mapped, buffers.uboData.model, buffers.dynamicUniform.size);
+
+    descriptor.createSets(textures, swapchain.images);
+}
+
 void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
     float currentFrame = glfwGetTime();
     float deltaTime = currentFrame - lastFrame;
@@ -148,4 +193,8 @@ void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
     if (glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS) {
         cleanup();
     }
+}
+
+void Adren::Renderer::addModel(std::string& path) {
+    models.push_back(path);
 }

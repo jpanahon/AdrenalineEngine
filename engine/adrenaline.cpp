@@ -41,6 +41,17 @@ void Adren::Engine::loop() {
         renderer.gui.viewport();
         editor.start();
         renderer.process(window);
+
+        if (editor.modelPaths.size() > renderer.models.size()) {
+            for (int i = renderer.models.size(); i < editor.modelPaths.size(); i++) {
+                renderer.addModel(editor.modelPaths[i]);
+            }
+        }
+        
+        if (objects < renderer.models.size()) {
+            renderer.reloadScene(renderer.models);
+            objects += renderer.models.size() - objects;
+        }
     }
 
     renderer.wait();

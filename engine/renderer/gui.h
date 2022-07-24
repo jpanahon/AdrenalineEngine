@@ -12,14 +12,14 @@
 #include "types.h"
 #include "swapchain.h"
 #include "pipeline.h"
-#include "descriptor.h"
 #include "renderpass.h"
 
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance, Camera& camera, Config& config) : devices(devices), 
-        buffers(buffers), images(images), swapchain(swapchain), instance(instance), camera(camera), config(config) {}
+    GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance, Camera& camera) : 
+        buffers(buffers), images(images), swapchain(swapchain), instance(instance), camera(camera),
+        device(devices.device), graphicsQueue(devices.graphicsQueue), gpu(devices.gpu), allocator(devices.allocator) {}
 
     void init(GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
@@ -40,27 +40,24 @@ public:
     } base;
 
 private:
-    
     void createCommands();
     void createRenderPass();
     void createFramebuffers();
     void resize();
     
-
-    Devices& devices;
     Buffers& buffers;
-    Descriptor& descriptor;
     Swapchain& swapchain;
     Images& images;
 
     Camera& camera;
 
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-    VkDevice& device = devices.device;
+    VkDevice& device;
     VkInstance& instance;
-    VkQueue& graphicsQueue = devices.graphicsQueue;
+    VkQueue& graphicsQueue;
     QueueFamilyIndices queueFam;
-    VkPhysicalDevice& gpu = devices.gpu;
+    VkPhysicalDevice& gpu;
+    VmaAllocator allocator;
 
     bool rightClick = false;
 

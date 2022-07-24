@@ -18,20 +18,21 @@
 namespace Adren {
 class Renderer {
 public:
-    Renderer(Config& config, GLFWwindow* window) : config(config), window(window) {}
+    Renderer(GLFWwindow* window) : window(window) {}
 
     void init(GLFWwindow* window);
     void cleanup();
     void process(GLFWwindow* window);
+    void reloadScene(std::vector<Model>& models);
     void wait() { vkDeviceWaitIdle(devices.device); }
+    void addModel(std::string& path);
     Camera camera;
-    GUI gui{devices, buffers, images, swapchain, instance, camera, config}; 
+    std::vector<Model> models;
+    GUI gui{devices, buffers, images, swapchain, instance, camera}; 
 private:
     void createInstance();
     void initVulkan();
     void processInput(GLFWwindow* window, Camera& camera);
-
-    Config& config;
     std::vector<Model::Texture> textures;
     
     VkInstance instance;
@@ -39,16 +40,16 @@ private:
     GLFWwindow* window;
     float lastFrame = 0.0f;
 
-    Devices devices{config.debug, instance, surface};
+    Devices devices{instance, surface};
 #ifdef DEBUG
     Debugger debugging{config.debug, instance};
 #endif
     Buffers buffers{devices};
-    Swapchain swapchain{devices, window, config};
-    Images images{config, devices, buffers};
+    Swapchain swapchain{devices, window};
+    Images images{models, devices, buffers};
     Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{devices, camera, config, window};
+    Processing processing{devices, camera, models, window};
 };
 }

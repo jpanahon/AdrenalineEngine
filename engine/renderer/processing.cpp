@@ -92,12 +92,12 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     
     gui.beginRenderpass(commandBuffer, pipeline.handle, buffers.vertex, buffers.index);
     Offset offset = {0, 0, 0, 0, 0, buffers.dynamicUniform.align};
-    for (uint32_t m = 0; m < config.models.size(); m++) {
-        for (size_t n = 0; n < config.models[m].nodes.size(); n++) {
-            Model::Node node = config.models[m].nodes[n];
-            config.models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset);
+    for (uint32_t m = 0; m < models.size(); m++) {
+        for (size_t n = 0; n < models[m].nodes.size(); n++) {
+            Model::Node node = models[m].nodes[n];
+            models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset);
         }
-        offset.texture += config.models[m].textures.size();
+        offset.texture += models[m].textures.size();
         offset.dynamic += static_cast<uint32_t>(offset.align);
     }
 

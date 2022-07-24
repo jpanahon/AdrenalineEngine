@@ -86,9 +86,9 @@ void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
 void Adren::GUI::cleanup() {
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroySampler(device, base.sampler, nullptr);
-    vmaDestroyImage(devices.allocator, base.color.image, base.color.memory);
+    vmaDestroyImage(allocator, base.color.image, base.color.memory);
     vkDestroyImageView(device, base.color.view, nullptr);
-    vmaDestroyImage(devices.allocator, base.depth.image, base.depth.memory);
+    vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
     vkDestroyImageView(device, base.depth.view, nullptr);
     vkDestroyRenderPass(device, base.renderpass, nullptr);
     vkDestroyFramebuffer(device, base.framebuffer, nullptr);
@@ -224,8 +224,8 @@ void Adren::GUI::createFramebuffers() {
     framebufferInfo.renderPass = base.renderpass;
     framebufferInfo.attachmentCount = 2;
     framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = base.width;
-    framebufferInfo.height = base.height;
+    framebufferInfo.width = camera.width;
+    framebufferInfo.height = camera.height;
     framebufferInfo.layers = 1;
 
     Adren::Tools::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
@@ -251,10 +251,10 @@ void Adren::GUI::createCommands() {
 void Adren::GUI::resize() {
     // Destroying the images because we would have to recreate it in a different size.
     vkDestroyImage(device, base.color.image, nullptr);
-    vmaFreeMemory(devices.allocator, base.color.memory);
+    vmaFreeMemory(allocator, base.color.memory);
 
     vkDestroyImage(device, base.depth.image, nullptr);
-    vmaFreeMemory(devices.allocator, base.depth.memory);
+    vmaFreeMemory(allocator, base.depth.memory);
 
     // Same with the images
     vkDestroyImageView(device, base.color.view, nullptr);
@@ -311,7 +311,7 @@ void Adren::GUI::viewport() {
     if (ImGui::BeginTabBar("ViewportTabBar")) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
         if (ImGui::BeginTabItem("Scene")) {
-            ImGui::Image((ImTextureID)base.set, ImVec2(base.width, base.height));
+            ImGui::Image((ImTextureID)base.set, ImVec2(camera.width, camera.height));
             ImGui::EndTabItem();
         }
 
@@ -329,8 +329,8 @@ void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, 
     renderpassInfo.renderPass = base.renderpass;
     renderpassInfo.framebuffer = base.framebuffer;
     renderpassInfo.renderArea.offset = { 0, 0 };
-    renderpassInfo.renderArea.extent.width = base.width;
-    renderpassInfo.renderArea.extent.height = base.height;
+    renderpassInfo.renderArea.extent.width = camera.width;
+    renderpassInfo.renderArea.extent.height = camera.height;
 
     VkClearValue clearValues[2];
     clearValues[0].color = { 0.119f, 0.181f, 0.254f, 1.0f };
@@ -342,14 +342,14 @@ void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, 
     vkCmdBeginRenderPass(buffer, &renderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport{};
-    viewport.width = (float)base.width;
-    viewport.height = (float)base.height;
+    viewport.width = (float)camera.width;
+    viewport.height = (float)camera.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
-    scissor.extent.width = base.width;
-    scissor.extent.height = base.height;
+    scissor.extent.width = camera.width;
+    scissor.extent.height = camera.height;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 

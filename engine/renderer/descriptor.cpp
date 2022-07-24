@@ -8,20 +8,13 @@
 #include "info.h"
 
 void Adren::Descriptor::createLayout(std::vector<Model>& models) {
-    std::vector<Model::Texture> textures;
-    for (Model m : models) {
-        for (const Model::Texture& t : m.textures) {
-            textures.push_back(t);
-        }
-    }
-
     VkDescriptorSetLayoutBinding uboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
 
     VkDescriptorSetLayoutBinding dynamicUboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1);
 
     VkDescriptorSetLayoutBinding samplerBinding = Adren::Info::samplerLayoutBinding();
 
-    VkDescriptorSetLayoutBinding textureBinding = Adren::Info::textureLayoutBinding(textures.size());
+    VkDescriptorSetLayoutBinding textureBinding = Adren::Info::textureLayoutBinding(2048);
 
 
     std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboBinding, dynamicUboBinding, samplerBinding, textureBinding};
@@ -136,4 +129,9 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(dWrites.size()), dWrites.data(), 0, nullptr);
         delete[] imageInfo;
     }
+}
+
+void Adren::Descriptor::cleanup() {
+    vkDestroyDescriptorSetLayout(device, layout, nullptr);
+    vkDestroyDescriptorPool(device, pool, nullptr);
 }

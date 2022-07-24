@@ -11,7 +11,7 @@
 namespace Adren {
 class Pipeline {
 public:
-	Pipeline(Devices& devices) : devices(devices) {}
+	Pipeline(Devices& devices) : device(devices.device) {}
 	void create(Swapchain& swapchain, VkDescriptorSetLayout& layout, VkRenderPass& renderpass);
 	VkPipeline handle;
 	VkPipelineLayout layout = VK_NULL_HANDLE;
@@ -19,7 +19,6 @@ private:
 	static std::vector<char> readFile(const std::string& filename);
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 
-	Devices& devices;
-	VkDevice& device = devices.device;
+	VkDevice& device;
 };
 }

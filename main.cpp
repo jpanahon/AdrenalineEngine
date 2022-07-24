@@ -11,7 +11,7 @@
 int main() {
     Config config{};
     
-    Model sponza("../engine/resources/models/sponza/Sponza.gltf");
+    /*Model sponza("../engine/resources/models/sponza/Sponza.gltf");
 
     //Model newSponza("../engine/resources/models/newsponza/NewSponza_Main_Blender_glTF.gltf");
 
@@ -26,11 +26,9 @@ int main() {
 
     //Model loba("../engine/resources/models/loba/scene.gltf");
     
-    //Model cj("../engine/resources/models/CJ/scene.gltf");
+    //Model cj("../engine/resources/models/CJ/scene.gltf");*/
 
-    config.models = {sponza};
-
-    Adren::Engine engine(config); 
+    Adren::Engine engine;
 
     try {
     	engine.run();

@@ -16,7 +16,7 @@
 namespace Adren {
 class Devices {
 public:
-    Devices(bool& debug, VkInstance& instance, VkSurfaceKHR& surface) : debug(debug), instance(instance), surface(surface) {}
+    Devices(VkInstance& instance, VkSurfaceKHR& surface) : instance(instance), surface(surface) {}
 
     void cleanup() { vkDestroyDevice(device, nullptr); vmaDestroyAllocator(allocator); }
     void pickGPU();
@@ -34,7 +34,6 @@ public:
     VmaAllocator allocator = VK_NULL_HANDLE;
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor"};
 private:
-    bool& debug;
     VkInstance& instance;
     const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);

@@ -32,6 +32,7 @@ inline void checkSize(std::string log, size_t size) {
     std::cerr << log << size << "\n \n" << std::endl;
 }
 
+#ifdef DEBUG
 inline void label(VkInstance& instance, VkDevice& device, VkObjectType type, uint64_t handle, const char *name) {
     VkDebugUtilsObjectNameInfoEXT info{};
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -41,6 +42,7 @@ inline void label(VkInstance& instance, VkDevice& device, VkObjectType type, uin
     auto func = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
     func(device, &info);
 }
+#endif
 
 inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR& surface) {
     QueueFamilyIndices indices;

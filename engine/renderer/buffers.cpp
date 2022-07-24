@@ -74,6 +74,7 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
 }
 
 void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model>& models) {
+    // Uniform buffer creation
     UniformBufferObject ubo;
     uniform.size = sizeof(ubo);
 
@@ -82,6 +83,7 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     vmaMapMemory(allocator, uniform.memory, &uniform.mapped);
     memcpy(uniform.mapped, &ubo, uniform.size);
 
+    // Dynamic uniform buffer creation
     VkPhysicalDeviceProperties gpuProperties{};
     vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
     VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;

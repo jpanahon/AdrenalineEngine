@@ -115,7 +115,7 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
 }
 
 void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
-    for (Model model : config.models) {
+    for (Model model : models) {
         for (size_t t = 0; t < model.textures.size(); t++) {
             Model::Texture texture = model.textures[t];
             int32_t index = model.textures[t].index;

@@ -10,23 +10,21 @@
 #include "renderer/renderer.h"
 #include "discord/discord.h"
 #include "editor/editor.h"
-#include "config.h"
 
 namespace Adren {
 class Engine {
 public:
-    Engine(Config& config) : config(config) {}
-    
     void run();
 private:
-    GLFWwindow* window;
+    GLFWwindow* window{};
     void makeWindow();
     void loop();
     void cleanup();
-    Config& config;
-    Renderer renderer{config, window};
-    Editor editor;
+    Renderer renderer{window};
     Camera& camera = renderer.camera;
+    Editor editor{camera};
     RPC* rpc;
+
+    uint32_t objects = 0;
 };
 }
