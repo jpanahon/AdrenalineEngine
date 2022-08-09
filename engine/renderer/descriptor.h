@@ -15,7 +15,7 @@ public:
 
 	void createLayout(std::vector<Model>& models);
 	void createPool(std::vector<VkImage>& images);
-	void createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images);
+	void createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images, Buffer& cam);
 
 	void cleanup();
 

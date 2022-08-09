@@ -14,16 +14,15 @@
 namespace Adren {
 class Images {
 public:
-	Images(std::vector<Model>& models, Devices& devices, Buffers& buffers) : models(models), 
-		device(devices.device), buffers(buffers), gpu(devices.gpu), 
-		graphicsQueue(devices.graphicsQueue), allocator(devices.allocator) {}
+	Images(Devices& devices, Buffers& buffers) : device(devices.device), buffers(buffers), 
+		gpu(devices.gpu), graphicsQueue(devices.graphicsQueue), allocator(devices.allocator) {}
 
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image);
 	VkImageView createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags);
-	void loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& commandPool);
+	void loadTextures(std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool);
 	void createDepthResources(VkExtent2D extent);
-	Image depth;
+	Image depth = {};
 private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool& commandPool);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, VkCommandPool& commandPool);
@@ -32,6 +31,5 @@ private:
 	VkQueue& graphicsQueue;
 	Buffers& buffers;
 	VmaAllocator& allocator;
-	std::vector<Model>& models;
 };
 }

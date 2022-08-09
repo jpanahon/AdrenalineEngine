@@ -8,11 +8,13 @@
 
 #pragma once
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <vector>
 #include "types.h"
 #include "swapchain.h"
 #include "pipeline.h"
 #include "renderpass.h"
+#include "camera.h"
 
 namespace Adren {
 class GUI {
@@ -39,6 +41,8 @@ public:
         VkSampler sampler;
     } base;
 
+    ImGuiContext* ctx = nullptr;
+    ImGuiStyle* style = nullptr;
 private:
     void createCommands();
     void createRenderPass();
@@ -57,15 +61,12 @@ private:
     VkQueue& graphicsQueue;
     QueueFamilyIndices queueFam;
     VkPhysicalDevice& gpu;
-    VmaAllocator allocator;
+    VmaAllocator& allocator;
 
     bool rightClick = false;
 
     int savedX = 0;
     int savedY = 0;
-    
-    bool showRenderInfo = false;
-    bool showCameraInfo = false;
 
     bool modelInfoLoaded = false;
 };

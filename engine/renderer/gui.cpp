@@ -7,7 +7,6 @@
 */
 
 #include "gui.h"
-#include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include "info.h"
@@ -38,8 +37,10 @@ void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
     Adren::Tools::vibeCheck("IMGUI DESCRIPTOR POOL", vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool));
 
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    ctx = ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    
+    style = &ImGui::GetStyle();
 
     queueFam = Adren::Tools::findQueueFamilies(gpu, surface);
 
@@ -250,11 +251,8 @@ void Adren::GUI::createCommands() {
 // It re-renders the scene in a different display resolution dictated by the viewport function.
 void Adren::GUI::resize() {
     // Destroying the images because we would have to recreate it in a different size.
-    vkDestroyImage(device, base.color.image, nullptr);
-    vmaFreeMemory(allocator, base.color.memory);
-
-    vkDestroyImage(device, base.depth.image, nullptr);
-    vmaFreeMemory(allocator, base.depth.memory);
+    vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
+    vmaDestroyImage(allocator, base.color.image, base.color.memory);
 
     // Same with the images
     vkDestroyImageView(device, base.color.view, nullptr);
@@ -357,12 +355,12 @@ void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, 
     vkCmdSetScissor(buffer, 0, 1, &scissor);
 
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
+    /*
     VkBuffer vertexBuffers[] = { vertex.buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(buffer, index.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(buffer, index.buffer, 0, VK_INDEX_TYPE_UINT32); */
 }
 
 

@@ -8,6 +8,8 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include "types.h"
+#include "buffers.h"
 
 namespace Adren {
 class Camera {
@@ -20,6 +22,8 @@ public:
     int32_t height;
     int32_t width;
 
+    Buffer cam;
+
     float speed = 0.5f;
     int fov = 90;
     int drawDistance = 10;
@@ -28,6 +32,9 @@ public:
     // This puts default position of the mouse at the center of the window
     double lastX = width / 2;
     double lastY = height / 2;
+
+    void create(Buffers& buffers, VmaAllocator& allocator);
+    void update();
 private:
     // This checks if it is the first time the mouse has been used.
     bool firstMouse = true;

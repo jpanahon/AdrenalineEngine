@@ -6,10 +6,8 @@
 */
 
 #include "engine/adrenaline.h"
-#define DEBUG
 
 int main() {
-    Config config{};
     
     /*Model sponza("../engine/resources/models/sponza/Sponza.gltf");
 

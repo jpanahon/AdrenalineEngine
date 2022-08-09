@@ -1,7 +1,8 @@
 #include "editor.h"
-#include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 
-void Adren::Editor::start() {
+void Adren::Editor::start(ImGuiContext* ctx) {
+    ImGui::SetCurrentContext(ctx);
     //bool yep = true;
     //ImGui::ShowDemoWindow(&yep);
 
@@ -59,11 +60,11 @@ void Adren::Editor::cameraInfo(bool* open) {
 
 
 void Adren::Editor::importModel() {
-    std::string path = "../engine/resources/models/sponza/Sponza.gltf";
-    modelPaths.push_back(path);
+    std::cout << "YEs";
 }
 
-void Adren::Editor::style() {
+void Adren::Editor::style(ImGuiContext* ctx) {
+    ImGui::SetCurrentContext(ctx);
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("../engine/resources/fonts/Montserrat-Regular.ttf", 14);
 

@@ -9,17 +9,19 @@
 #include <iostream>
 #include <vector>
 
-#include "config.h"
 #include "model.h"
 #include "camera.h"
-#include "debugging.h"
+
+#ifdef DEBUG
+    #include "debugging.h"
+#endif
+
 #include "processing.h" // Has all the other components included
+#include "descriptor.h"
 
 namespace Adren {
 class Renderer {
 public:
-    Renderer(GLFWwindow* window) : window(window) {}
-
     void init(GLFWwindow* window);
     void cleanup();
     void process(GLFWwindow* window);
@@ -27,11 +29,11 @@ public:
     void wait() { vkDeviceWaitIdle(devices.device); }
     void addModel(std::string& path);
     Camera camera;
-    std::vector<Model> models;
+    std::vector<Model> models = { Model("C:\\Users\\jovic\\Documents\\Coding\\AdrenalineEngine\\engine\\resources\\models\\sponza\\Sponza.gltf") };
     GUI gui{devices, buffers, images, swapchain, instance, camera}; 
 private:
     void createInstance();
-    void initVulkan();
+    void initVulkan(GLFWwindow* window);
     void processInput(GLFWwindow* window, Camera& camera);
     std::vector<Model::Texture> textures;
     
@@ -42,14 +44,14 @@ private:
 
     Devices devices{instance, surface};
 #ifdef DEBUG
-    Debugger debugging{config.debug, instance};
+    Debugger debugging{instance};
 #endif
     Buffers buffers{devices};
     Swapchain swapchain{devices, window};
-    Images images{models, devices, buffers};
+    Images images{devices, buffers};
     Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{devices, camera, models, window};
+    Processing processing{devices, camera, window};
 };
 }

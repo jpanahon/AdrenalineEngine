@@ -7,6 +7,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include "camera.h"
+#include "types.h"
 #include <iostream>
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
@@ -52,4 +53,25 @@ void Adren::Camera::callback(GLFWwindow* window, double xpos, double ypos) {
     if (app->toggled) {
         app->front = glm::normalize(direction);
     }
+}
+
+void Adren::Camera::create(Buffers& buffers, VmaAllocator& allocator) {
+    CameraObject camera;
+    cam.size = sizeof(camera);
+
+    buffers.createBuffer(allocator, cam.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        cam, VMA_MEMORY_USAGE_GPU_ONLY);
+    vmaMapMemory(allocator, cam.memory, &cam.mapped);
+    memcpy(cam.mapped, &camera, cam.size);
+}
+
+void Adren::Camera::update() {
+    CameraObject camera{};
+    camera.view = glm::lookAt(pos, pos + front, up);
+
+    float screen = (float)width / (float)height;
+    uint32_t distance = drawDistance * 1000;
+    camera.proj = glm::perspective(glm::radians((float)fov), screen, 0.1f, (float)distance);
+    camera.proj[1][1] *= -1;
+    memcpy(cam.mapped, &camera, sizeof(camera));
 }

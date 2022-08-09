@@ -16,15 +16,15 @@ class Engine {
 public:
     void run();
 private:
-    GLFWwindow* window{};
+    GLFWwindow* window;
     void makeWindow();
     void loop();
     void cleanup();
-    Renderer renderer{window};
+    Renderer renderer;
     Camera& camera = renderer.camera;
     Editor editor{camera};
     RPC* rpc;
 
-    uint32_t objects = 0;
+    uint32_t objects = 1;
 };
 }

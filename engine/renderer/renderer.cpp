@@ -15,7 +15,6 @@
 #include "tools.h"
 #include <chrono>
 
-
 void Adren::Renderer::createInstance() {
 #ifdef DEBUG
     if (!devices.checkDebugSupport()) {
@@ -48,7 +47,7 @@ void Adren::Renderer::createInstance() {
     Adren::Tools::vibeCheck("CREATE INSTANCE", vkCreateInstance(&instanceInfo, nullptr, &instance));
 }
 
-void Adren::Renderer::initVulkan() {
+void Adren::Renderer::initVulkan(GLFWwindow* window) {
     Adren::Tools::log("Initializing program..");
     createInstance(); Adren::Tools::log("Instance created..");
 
@@ -69,12 +68,13 @@ void Adren::Renderer::initVulkan() {
     processing.createCommands(surface, instance); Adren::Tools::log("Command pool and buffers created..");
     processing.createSyncObjects(); Adren::Tools::log("Sync objects created..");
     swapchain.createFramebuffers(images.depth, renderpass.handle); Adren::Tools::log("Main framebuffers created..");
-    images.loadTextures(textures, processing.commandPool); Adren::Tools::log("Model textures created..");
+    images.loadTextures(models, textures, processing.commandPool); Adren::Tools::log("Model textures created..");
     buffers.createModelBuffers(models, processing.commandPool); Adren::Tools::log("Index buffers created..");
-    buffers.createUniformBuffers(swapchain.images, models); Adren::Tools::log("Uniform buffers created..");
+    camera.create(buffers, devices.allocator); Adren::Tools::log("Camera created..");
+    buffers.createUniformBuffers(swapchain.images, models); Adren::Tools::log("Dynamic uniform buffer created..");
     buffers.updateDynamicUniformBuffer(models);
     descriptor.createPool(swapchain.images); Adren::Tools::log("Descriptor pool created..");
-    descriptor.createSets(textures, swapchain.images); Adren::Tools::log("Descriptor sets created..");
+    descriptor.createSets(textures, swapchain.images, camera.cam); Adren::Tools::log("Descriptor sets created..");
 
 #ifdef DEBUG
         Adren::Tools::label(instance, devices.device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)processing.commandPool, "PRIMARY COMMAND POOL");
@@ -83,12 +83,12 @@ void Adren::Renderer::initVulkan() {
 }
 
 void Adren::Renderer::process(GLFWwindow* window) {
-    if (camera.toggled) { buffers.updateUniformBuffer(camera, swapchain.extent); processInput(window, camera); }
-    processing.render(buffers, pipeline, descriptor, swapchain, renderpass, gui);
+    if (camera.toggled) { camera.update(); processInput(window, camera); }
+    processing.render(models, buffers, pipeline, descriptor.sets, swapchain, renderpass, gui);
 }
 
 void Adren::Renderer::init(GLFWwindow* window) { 
-    initVulkan();
+    initVulkan(window);
     gui.init(window, surface); 
 }
 
@@ -126,38 +126,22 @@ void Adren::Renderer::reloadScene(std::vector<Model>& models) {
 
         What this does is re-render the entire screen when new elements are in. 
     */
-    
+
     vmaDestroyBuffer(devices.allocator, buffers.index.buffer, buffers.index.memory);
     vmaDestroyBuffer(devices.allocator, buffers.vertex.buffer, buffers.vertex.memory);
     vmaDestroyBuffer(devices.allocator, buffers.dynamicUniform.buffer, buffers.dynamicUniform.memory);
 
+    for (const Model::Texture& texture : textures) {
+        vmaDestroyImage(devices.allocator, texture.image, texture.memory);
+        vkDestroyImageView(devices.device, texture.view, nullptr);
+    }
+
+    images.loadTextures(models, textures, processing.commandPool);
     buffers.createModelBuffers(models, processing.commandPool);
 
-    VkPhysicalDeviceProperties gpuProperties{};
-    vkGetPhysicalDeviceProperties(devices.gpu, &gpuProperties);
-    VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
-    buffers.dynamicUniform.align = sizeof(glm::mat4);
-    if (minUboAlignment > 0) {
-        buffers.dynamicUniform.align = (buffers.dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
-    }
+    buffers.createUniformBuffers(swapchain.images, models);
 
-    uint32_t modelSize = 0;
-    for (Model& model : models) {
-        for (Model::Node& node : model.nodes) {
-            model.count(modelSize, node.children);
-            modelSize++;
-        }
-    }
-
-    buffers.dynamicUniform.size = buffers.dynamicUniform.align * modelSize;
-    buffers.uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(buffers.dynamicUniform.size, buffers.dynamicUniform.align);
-    assert(buffers.uboData.model);
-
-    buffers.createBuffer(devices.allocator, buffers.dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, buffers.dynamicUniform, VMA_MEMORY_USAGE_AUTO);
-    vmaMapMemory(devices.allocator, buffers.dynamicUniform.memory, &buffers.dynamicUniform.mapped);
-    memcpy(buffers.dynamicUniform.mapped, buffers.uboData.model, buffers.dynamicUniform.size);
-
-    descriptor.createSets(textures, swapchain.images);
+    descriptor.createSets(textures, swapchain.images, camera.cam);
 }
 
 void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
@@ -197,4 +181,5 @@ void Adren::Renderer::processInput(GLFWwindow* window, Camera& camera) {
 
 void Adren::Renderer::addModel(std::string& path) {
     models.push_back(path);
+    
 }

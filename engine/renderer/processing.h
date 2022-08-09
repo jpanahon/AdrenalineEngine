@@ -7,18 +7,16 @@
 
 #pragma once
 #include "gui.h"
-#include "descriptor.h"
 
 namespace Adren {
 class Processing {
 public:
-    Processing(Devices& devices, Camera& camera, std::vector<Model>& models, GLFWwindow* window) :
-        device(devices.device), camera(camera), models(models), window(window), gpu(devices.gpu),
+    Processing(Devices& devices, Camera& camera, GLFWwindow* window) : device(devices.device), camera(camera), window(window), gpu(devices.gpu),
         graphicsQueue(devices.graphicsQueue), presentQueue(devices.presentQueue) {}
 
     void createCommands(VkSurfaceKHR& surface, VkInstance& instance);
     void createSyncObjects();
-    void render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
+    void render(std::vector<Model>& models, Buffers& buffers, Pipeline& pipeline, std::vector<VkDescriptorSet>& sets, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
     void cleanup();
    
     VkCommandPool commandPool = VK_NULL_HANDLE;
@@ -26,7 +24,6 @@ public:
 private:
     GLFWwindow* window;
     Camera& camera;
-    std::vector<Model>& models;
     VkDevice& device;
     VkPhysicalDevice& gpu;
     VkQueue& graphicsQueue;
@@ -35,6 +32,6 @@ private:
 
     static const int maxFramesInFlight = 3;
 
-    Frame frames[maxFramesInFlight];
+    std::array<Frame, maxFramesInFlight> frames{};
 };
 }

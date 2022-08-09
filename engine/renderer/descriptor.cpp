@@ -64,7 +64,7 @@ void Adren::Descriptor::fillWrites(std::array<VkWriteDescriptorSet, 4>& write, i
     write[index].descriptorCount = count;
 }
 
-void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images) {
+void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images, Buffer& cam) {
     size_t textureSize = textures.size();
     uint32_t setCount = static_cast<uint32_t>(images.size());
     std::vector<VkDescriptorSetLayout> layouts(setCount, layout);
@@ -89,9 +89,9 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
 
     for (size_t i = 0; i < sets.size(); i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = buffers.uniform.buffer;
+        bufferInfo.buffer = cam.buffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        bufferInfo.range = sizeof(CameraObject);
 
         VkDescriptorBufferInfo dynamicBufferInfo{};
         dynamicBufferInfo.buffer = buffers.dynamicUniform.buffer;

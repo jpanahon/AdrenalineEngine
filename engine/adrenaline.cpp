@@ -39,9 +39,9 @@ void Adren::Engine::loop() {
     while (!glfwWindowShouldClose(window)) {
         renderer.gui.newFrame(window);
         renderer.gui.viewport();
-        editor.start();
+        editor.start(renderer.gui.ctx);
         renderer.process(window);
-
+        /*
         if (editor.modelPaths.size() > renderer.models.size()) {
             for (int i = renderer.models.size(); i < editor.modelPaths.size(); i++) {
                 renderer.addModel(editor.modelPaths[i]);
@@ -52,6 +52,7 @@ void Adren::Engine::loop() {
             renderer.reloadScene(renderer.models);
             objects += renderer.models.size() - objects;
         }
+        */
     }
 
     renderer.wait();
@@ -63,8 +64,8 @@ void Adren::Engine::run() {
 
     makeWindow();
     renderer.init(window);
-    editor.style();
     loop();
+    editor.style(renderer.gui.ctx);
     cleanup();
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <imgui.h>
 #include <vector>
 #include <string>
 #include <glfw/glfw3.h>
@@ -10,12 +11,13 @@ class Editor {
 public:
     Editor(Camera& camera) : camera(camera) {}
 
-    void start();
+    void start(ImGuiContext* ctx);
     void cameraInfo(bool* open);
-    void style();
+    void style(ImGuiContext* ctx);
     void importModel();
     std::vector<std::string> modelPaths;
 private:
+    bool showCameraInfo = false;
     Camera& camera;
 };
 }

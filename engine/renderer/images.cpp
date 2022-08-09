@@ -114,7 +114,7 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
     Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
 }
 
-void Images::loadTextures(std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
+void Images::loadTextures(std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
     for (Model model : models) {
         for (size_t t = 0; t < model.textures.size(); t++) {
             Model::Texture texture = model.textures[t];

@@ -70,7 +70,7 @@ void Adren::Processing::createSyncObjects() {
     }
 }
 
-void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui) {
+void Adren::Processing::render(std::vector<Model>& models, Buffers& buffers, Pipeline& pipeline, std::vector<VkDescriptorSet>& sets, Swapchain& swapchain, Renderpass& renderpass, GUI& gui) {
     ImGui::Render();
 
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
@@ -89,18 +89,20 @@ void Adren::Processing::render(Buffers& buffers, Pipeline& pipeline, Descriptor&
     //vkResetCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
     vkResetCommandPool(device, frames[currentFrame].commandPool, 0);
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    
-    gui.beginRenderpass(commandBuffer, pipeline.handle, buffers.vertex, buffers.index);
-    Offset offset = {0, 0, 0, 0, 0, buffers.dynamicUniform.align};
-    for (uint32_t m = 0; m < models.size(); m++) {
-        for (size_t n = 0; n < models[m].nodes.size(); n++) {
-            Model::Node node = models[m].nodes[n];
-            models[m].drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset);
-        }
-        offset.texture += models[m].textures.size();
-        offset.dynamic += static_cast<uint32_t>(offset.align);
-    }
 
+    gui.beginRenderpass(commandBuffer, pipeline.handle, buffers.vertex, buffers.index);
+    
+    Offset offset = { 0, 0, 0, 0, 0, buffers.dynamicUniform.align };
+    if (models.size() >= 1) {
+        for (uint32_t m = 0; m < models.size(); m++) {
+            for (size_t n = 0; n < models[m].nodes.size(); n++) {
+                Model::Node node = models[m].nodes[n];
+                models[m].drawNode(commandBuffer, pipeline.layout, node, sets[imageIndex], offset);
+            }
+            offset.texture += models[m].textures.size();
+            offset.dynamic += static_cast<uint32_t>(offset.align);
+        }
+    }
     vkCmdEndRenderPass(commandBuffer);
 
     renderpass.begin(commandBuffer, imageIndex, swapchain.framebuffers, swapchain.extent);
