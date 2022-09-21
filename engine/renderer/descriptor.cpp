@@ -103,12 +103,13 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
 
         VkDescriptorImageInfo samplerInfo{};
         samplerInfo.sampler = sampler;
-        VkDescriptorImageInfo* imageInfo;
-        imageInfo = new VkDescriptorImageInfo[textureSize];
+        std::vector<VkDescriptorImageInfo> imageInfo;
         for (uint32_t t = 0; t < textureSize; t++) {
-            imageInfo[t].sampler = sampler;
-            imageInfo[t].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[t].imageView = textures[t].view;
+            VkDescriptorImageInfo info;
+            info.sampler = sampler;
+            info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info.imageView = textures[t].view;
+            imageInfo.push_back(info);
         }
 
         std::array<VkWriteDescriptorSet, 4> dWrites{};
@@ -124,14 +125,14 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
         dWrites[2].pImageInfo = &samplerInfo;
 
         fillWrites(dWrites, 3, sets[i], 3, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureSize);
-        dWrites[3].pImageInfo = imageInfo;
+        dWrites[3].pImageInfo = imageInfo.data();
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(dWrites.size()), dWrites.data(), 0, nullptr);
-        delete[] imageInfo;
     }
 }
 
 void Adren::Descriptor::cleanup() {
     vkDestroyDescriptorSetLayout(device, layout, nullptr);
     vkDestroyDescriptorPool(device, pool, nullptr);
+    vkDestroySampler(device, sampler, nullptr);
 }

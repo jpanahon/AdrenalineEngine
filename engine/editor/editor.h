@@ -3,22 +3,16 @@
 #include <vector>
 #include <string>
 #include <glfw/glfw3.h>
-#include "renderer/camera.h"
+#include "renderer/renderer.h"
 
 namespace Adren {
-
 class Editor {
 public:
-    Editor(Camera& camera) : camera(camera) {}
-
-    void start(ImGuiContext* ctx);
-    void cameraInfo(bool* open);
-    void style(ImGuiContext* ctx);
-    void importModel();
+    void start(ImGuiContext* ctx, Camera* camera, Renderer& renderer);
+    void cameraInfo(bool* open, Camera* camera);
     std::vector<std::string> modelPaths;
 private:
     bool showCameraInfo = false;
-    Camera& camera;
 };
 }
 

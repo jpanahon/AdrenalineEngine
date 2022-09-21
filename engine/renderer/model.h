@@ -50,23 +50,16 @@ public:
 
     tinygltf::Model gltf;
     std::vector<Texture> textures;
-    glm::vec3 position = glm::vec3(0.0f);
-    float rotationAngle = 0.0f;
-    float scale = 0.0f;
-    glm::vec3 rotationAxis = ADREN_Y_AXIS;
     std::vector<Node> nodes;
     std::vector<Material> materials;
     std::vector<glTFImage> images;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    glm::mat4 matrix();
     void count(uint32_t& num, const std::vector<Node>& nodes);
     void count(std::vector<glm::mat4>& matrices, const std::vector<Node>& nodes);
     void drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, Node& node, VkDescriptorSet& set, Offset& offset);
 private:
-    void fillTextures(tinygltf::Model& model);
-    void fillMaterials(tinygltf::Model& model);
-    void fillImages(tinygltf::Model& model);
+    void getTextures(tinygltf::Model& model);
     void fillNode(const tinygltf::Node& iNode, const tinygltf::Model& model, Node* parent, glm::mat4& matrix);
     void findComponent(const tinygltf::Accessor& accessor, const tinygltf::Buffer& buffer, 
         const tinygltf::BufferView& view);

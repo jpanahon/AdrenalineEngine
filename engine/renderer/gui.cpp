@@ -12,7 +12,7 @@
 #include "info.h"
 #include <glm/gtc/type_ptr.hpp>
 
-void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
+void Adren::GUI::init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -38,15 +38,53 @@ void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
 
     IMGUI_CHECKVERSION();
     ctx = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx);
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     
-    style = &ImGui::GetStyle();
+    io.Fonts->AddFontFromFileTTF("../engine/resources/fonts/Montserrat-Regular.ttf", 14);
+
+    ImVec4 uiBlack = ImVec4(0.008f, 0.008f, 0.008f, 1.000f);
+    ImVec4 uiPurple = ImVec4(0.431f, 0.235f, 1.000f, 1.000f);
+    ImVec4 uiFrame = ImVec4(0.014f, 0.014f, 0.014f, 1.000f);
+    ImVec4 uiScroll = ImVec4(0.018f, 0.018f, 0.018f, 1.000f);
+
+    // Changing the default theme.
+    ImGuiStyle* style = &ImGui::GetStyle();
+    style->WindowPadding = ImVec2(8.0f, 8.0f);
+    ImVec4* colors = style->Colors;
+    colors[ImGuiCol_Text] = ImVec4(1.000f, 1.000f, 1.000f, 1.000f);
+    colors[ImGuiCol_WindowBg] = uiBlack;
+    colors[ImGuiCol_TitleBg] = uiPurple;
+    colors[ImGuiCol_TitleBgActive] = uiPurple;
+    colors[ImGuiCol_TitleBgCollapsed] = uiPurple;
+    colors[ImGuiCol_PopupBg] = ImVec4(0.000f, 0.000f, 0.000f, 0.9000f);
+    colors[ImGuiCol_Button] = uiPurple;
+    colors[ImGuiCol_Header] = uiPurple;
+    colors[ImGuiCol_HeaderHovered] = uiPurple;
+    colors[ImGuiCol_HeaderActive] = uiPurple;
+    colors[ImGuiCol_FrameBg] = uiFrame;
+    colors[ImGuiCol_Border] = uiFrame;
+    colors[ImGuiCol_ResizeGrip] = uiFrame;
+    colors[ImGuiCol_ResizeGripHovered] = uiFrame;
+    colors[ImGuiCol_ResizeGripActive] = uiFrame;
+    colors[ImGuiCol_MenuBarBg] = uiBlack;
+    colors[ImGuiCol_ScrollbarBg] = uiFrame;
+    colors[ImGuiCol_ScrollbarGrab] = uiScroll;
+    colors[ImGuiCol_ScrollbarGrabActive] = uiScroll;
+    colors[ImGuiCol_ScrollbarGrabHovered] = uiScroll;
+    colors[ImGuiCol_SliderGrab] = uiPurple;
+    colors[ImGuiCol_SliderGrabActive] = uiPurple;
+    colors[ImGuiCol_Tab] = uiPurple;
+    colors[ImGuiCol_TabActive] = uiPurple;
+    colors[ImGuiCol_TabHovered] = uiPurple;
+    colors[ImGuiCol_TabUnfocused] = uiPurple;
+    colors[ImGuiCol_TabUnfocusedActive] = uiPurple;
 
     queueFam = Adren::Tools::findQueueFamilies(gpu, surface);
 
-    createRenderPass();
+    createRenderPass(camera);
     createCommands();
-    createFramebuffers();
+    createFramebuffers(camera);
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
 
@@ -74,17 +112,18 @@ void Adren::GUI::init(GLFWwindow* window, VkSurfaceKHR& surface) {
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 
     base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    
+ 
 #ifdef DEBUG
         Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)base.commandPool, "IMGUI COMMAND POOL");
         Adren::Tools::label(instance, device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)base.framebuffer, "IMGUI FRAMEBUFFER");
         Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)base.renderpass, "IMGUI RENDER PASS");
 #endif
-
     Adren::Tools::log("ImGui has been initialized..");
 }
 
 void Adren::GUI::cleanup() {
+    vkDeviceWaitIdle(device);
+    vkDestroyCommandPool(device, base.commandPool, nullptr);
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroySampler(device, base.sampler, nullptr);
     vmaDestroyImage(allocator, base.color.image, base.color.memory);
@@ -98,10 +137,10 @@ void Adren::GUI::cleanup() {
     ImGui::DestroyContext(); 
 }
 
-void Adren::GUI::mouseHandler(GLFWwindow* window) {
+void Adren::GUI::mouseHandler(GLFWwindow* window, Camera* camera) {
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantCaptureMouse) {
-        camera.toggled = false;
+        camera->toggled = false;
     } else {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && rightClick == true) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -111,8 +150,8 @@ void Adren::GUI::mouseHandler(GLFWwindow* window) {
     }
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && rightClick == false) {
-        int centerX = camera.width / 2;
-        int centerY = camera.height / 2;
+        int centerX = camera->getWidth() / 2;
+        int centerY = camera->getHeight() / 2;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetCursorPos(window, centerX, centerY);
         savedX = io.MousePos.x;
@@ -120,25 +159,25 @@ void Adren::GUI::mouseHandler(GLFWwindow* window) {
         rightClick = true;
     }
 
-    if (rightClick) { camera.toggled = false; } else { camera.toggled = true; }
+    if (rightClick) { camera->toggled = false; } else { camera->toggled = true; }
 
 }
 
-void Adren::GUI::newFrame(GLFWwindow* window) {
+void Adren::GUI::newFrame(GLFWwindow* window, Camera* camera) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    mouseHandler(window);
+    mouseHandler(window, camera);
 }
 
-void Adren::GUI::createRenderPass() {
-    images.createImage(camera.width, camera.height, swapchain.imgFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
-        | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY, base.color);
+void Adren::GUI::createRenderPass(Camera* camera) {
+    images.createImage(camera->getWidth(), camera->getHeight(), swapchain.imgFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
+        | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, base.color);
     
     base.color.view = images.createImageView(base.color.image, swapchain.imgFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    images.createImage(camera.width, camera.height, images.depth.format, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY, base.depth);
+    images.createImage(camera->getWidth(), camera->getHeight(), images.depth.format, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, base.depth);
 
     base.depth.view = images.createImageView(base.depth.image, images.depth.format, VK_IMAGE_ASPECT_DEPTH_BIT);
    
@@ -185,7 +224,7 @@ void Adren::GUI::createRenderPass() {
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorReference;
     subpass.pDepthStencilAttachment = &depthReference;
-
+    
     std::array<VkSubpassDependency, 2> dependencies;
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
@@ -202,7 +241,7 @@ void Adren::GUI::createRenderPass() {
     dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
+    
     VkRenderPassCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     info.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -213,9 +252,16 @@ void Adren::GUI::createRenderPass() {
     info.pDependencies = dependencies.data();
 
     Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &info, nullptr, &base.renderpass));
+
+#ifdef DEBUG 
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.color.image, "GUI COLOR IMAGE");
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.depth.image, "GUI DEPTH IMAGE");
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.color.view, "GUI COLOR IMAGE VIEW");
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.depth.view, "GUI DEPTH IMAGE VIEW");
+#endif
 }
 
-void Adren::GUI::createFramebuffers() {
+void Adren::GUI::createFramebuffers(Camera* camera) {
     VkImageView attachments[2];
     attachments[0] = base.color.view;
     attachments[1] = base.depth.view;
@@ -225,8 +271,8 @@ void Adren::GUI::createFramebuffers() {
     framebufferInfo.renderPass = base.renderpass;
     framebufferInfo.attachmentCount = 2;
     framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = camera.width;
-    framebufferInfo.height = camera.height;
+    framebufferInfo.width = camera->getWidth();
+    framebufferInfo.height = camera->getHeight();
     framebufferInfo.layers = 1;
 
     Adren::Tools::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
@@ -238,18 +284,11 @@ void Adren::GUI::createCommands() {
     commandPoolInfo.queueFamilyIndex = queueFam.graphicsFamily.value();
     commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     Adren::Tools::vibeCheck("CREATED IMGUI COMMAND POOL", vkCreateCommandPool(device, &commandPoolInfo, nullptr, &base.commandPool));
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = base.commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-    Adren::Tools::vibeCheck("IMGUI COMMAND BUFFER", vkAllocateCommandBuffers(device, &allocInfo, &base.commandBuffer));
 }
 
 // This function recreates images, renderpassand framebuffer used to display the Vulkan scene to the GUI.
 // It re-renders the scene in a different display resolution dictated by the viewport function.
-void Adren::GUI::resize() {
+void Adren::GUI::resize(Camera* camera) {
     // Destroying the images because we would have to recreate it in a different size.
     vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
     vmaDestroyImage(allocator, base.color.image, base.color.memory);
@@ -264,12 +303,12 @@ void Adren::GUI::resize() {
 
 
     // This creates a new renderpass and framebuffer with the new size
-    createRenderPass();
-    createFramebuffers();
+    createRenderPass(camera);
+    createFramebuffers(camera);
 }
 
 // This function sets up the viewport element of the editor that shows what Vulkan is rendering.
-void Adren::GUI::viewport() {
+void Adren::GUI::viewport(Camera* camera) {
 
     // Clearing padding and setting the minimum size of the viewport to be 800 x 600.
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -277,7 +316,7 @@ void Adren::GUI::viewport() {
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
 
-    ImGui::SetWindowSize(ImVec2(camera.width, camera.height)); // We are setting the window default window size
+    ImGui::SetWindowSize(ImVec2(camera->getWidth(), camera->getHeight())); // We are setting the window default window size
 
     // This positions the viewport in the center of your screen, although you can resize it.
     ImGuiIO& io = ImGui::GetIO();
@@ -291,15 +330,16 @@ void Adren::GUI::viewport() {
     ImVec2 size = ImGui::GetContentRegionAvail();
 
     // Thank you olkotov for inspiration https://github.com/ocornut/imgui/issues/1287#issuecomment-1093514753
-    if (size.x != camera.width || size.y != camera.height) {
+    if (size.x != camera->getWidth() || size.y != camera->getHeight()) {
         if (size.x <= 0 || size.y <= 0) {
             return;
         }
 
-        camera.width = size.x;
-        camera.height = size.y;
+        camera->setWidth(size.x);
+        camera->setHeight(size.y);
 
-        resize();
+        vkDeviceWaitIdle(device);
+        resize(camera);
 
         // We are redefining base.set to have the new size.
         base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -309,7 +349,7 @@ void Adren::GUI::viewport() {
     if (ImGui::BeginTabBar("ViewportTabBar")) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
         if (ImGui::BeginTabItem("Scene")) {
-            ImGui::Image((ImTextureID)base.set, ImVec2(camera.width, camera.height));
+            ImGui::Image((ImTextureID)base.set, ImVec2(camera->getWidth(), camera->getHeight()));
             ImGui::EndTabItem();
         }
 
@@ -321,14 +361,14 @@ void Adren::GUI::viewport() {
     ImGui::End();
 }
 
-void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer vertex, Buffer index) {
+void Adren::GUI::beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index) {
     VkRenderPassBeginInfo renderpassInfo{};
     renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpassInfo.renderPass = base.renderpass;
     renderpassInfo.framebuffer = base.framebuffer;
     renderpassInfo.renderArea.offset = { 0, 0 };
-    renderpassInfo.renderArea.extent.width = camera.width;
-    renderpassInfo.renderArea.extent.height = camera.height;
+    renderpassInfo.renderArea.extent.width = camera->getWidth();
+    renderpassInfo.renderArea.extent.height = camera->getHeight();
 
     VkClearValue clearValues[2];
     clearValues[0].color = { 0.119f, 0.181f, 0.254f, 1.0f };
@@ -340,14 +380,14 @@ void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, 
     vkCmdBeginRenderPass(buffer, &renderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport{};
-    viewport.width = (float)camera.width;
-    viewport.height = (float)camera.height;
+    viewport.width = (float)camera->getWidth();
+    viewport.height = (float)camera->getHeight();
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
-    scissor.extent.width = camera.width;
-    scissor.extent.height = camera.height;
+    scissor.extent.width = camera->getWidth();
+    scissor.extent.height = camera->getHeight();
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 
@@ -355,12 +395,12 @@ void Adren::GUI::beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, 
     vkCmdSetScissor(buffer, 0, 1, &scissor);
 
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    /*
+    
     VkBuffer vertexBuffers[] = { vertex.buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(buffer, index.buffer, 0, VK_INDEX_TYPE_UINT32); */
+    vkCmdBindIndexBuffer(buffer, index.buffer, 0, VK_INDEX_TYPE_UINT32); 
 }
 
 

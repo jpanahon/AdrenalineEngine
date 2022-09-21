@@ -22,11 +22,6 @@
 #include <array>
 #include "vk_mem_alloc.h"
 
-#define ADREN_X_AXIS glm::vec3(1.0f, 0.0f, 0.0f)
-#define ADREN_Y_AXIS glm::vec3(0.0f, 1.0f, 0.0f)
-#define ADREN_Z_AXIS glm::vec3(1.0f, 0.0f, 1.0f)
-
-
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;

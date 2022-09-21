@@ -22,19 +22,19 @@
 namespace Adren {
 class Renderer {
 public:
-    void init(GLFWwindow* window);
-    void cleanup();
-    void process(GLFWwindow* window);
-    void reloadScene(std::vector<Model>& models);
+    void init(GLFWwindow* window, Camera* camera);
+    void cleanup(Camera* camera);
+    void process(Camera* camera);
+    void reloadScene(std::vector<Model>& models, Camera* camera);
     void wait() { vkDeviceWaitIdle(devices.device); }
-    void addModel(std::string& path);
-    Camera camera;
-    std::vector<Model> models = { Model("C:\\Users\\jovic\\Documents\\Coding\\AdrenalineEngine\\engine\\resources\\models\\sponza\\Sponza.gltf") };
-    GUI gui{devices, buffers, images, swapchain, instance, camera}; 
+    void addModel(char* path);
+    void processInput(GLFWwindow* window, Camera* camera);
+    Model sponza{ "../engine/resources/models/sponza/Sponza.gltf" };
+    std::vector<Model> models = { sponza };
+    GUI gui{devices, buffers, images, swapchain, instance}; 
 private:
     void createInstance();
-    void initVulkan(GLFWwindow* window);
-    void processInput(GLFWwindow* window, Camera& camera);
+    void initVulkan(GLFWwindow* window, Camera* camera);
     std::vector<Model::Texture> textures;
     
     VkInstance instance;
@@ -43,15 +43,17 @@ private:
     float lastFrame = 0.0f;
 
     Devices devices{instance, surface};
+
 #ifdef DEBUG
     Debugger debugging{instance};
 #endif
-    Buffers buffers{devices};
+
+    Buffers buffers{instance, devices};
     Swapchain swapchain{devices, window};
     Images images{devices, buffers};
     Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{devices, camera, window};
+    Processing processing{devices, window};
 };
 }

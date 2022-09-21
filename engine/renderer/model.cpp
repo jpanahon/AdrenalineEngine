@@ -23,16 +23,14 @@ Model::Model(std::string modelPath) {
 
     bool file = tinyGLTF.LoadASCIIFromFile(&gltf, &error, &warning, modelPath);
 
-    if (!file) { Adren::Tools::log("Unable to load glTF file."); }
+    if (!file) Adren::Tools::log("Unable to load glTF file."); 
 
-    if (!error.empty()) { std::cerr << error; }
+    if (!error.empty()) std::cerr << error;
 
-    if (!warning.empty()) { std::cerr << warning; }
+    if (!warning.empty()) std::cerr << warning; 
 
     if (file) {
-        fillImages(gltf);
-        fillMaterials(gltf);
-        fillTextures(gltf);
+        getTextures(gltf);
         tinygltf::Scene scene = gltf.scenes[0];
         for (size_t i = 0; i < scene.nodes.size(); i++) {
             const tinygltf::Node node = gltf.nodes[scene.nodes[i]];
@@ -41,14 +39,12 @@ Model::Model(std::string modelPath) {
     }
 };
 
-void Model::fillTextures(tinygltf::Model& model) {
+void Model::getTextures(tinygltf::Model& model) {
     textures.resize(model.textures.size());
     for (size_t t = 0; t < model.textures.size(); t++) {
         textures[t].index = model.textures[t].source;
     }
-}
 
-void Model::fillImages(tinygltf::Model& model) {
     images.resize(model.images.size());
     for (size_t i = 0; i < model.images.size(); i++) {
         tinygltf::Image& image = model.images[i];
@@ -59,7 +55,7 @@ void Model::fillImages(tinygltf::Model& model) {
             imageBuffer = new unsigned char[imageBufferSize];
             unsigned char* rgba = imageBuffer;
             unsigned char* rgb = &image.image[0];
-            for (size_t i = 0; i < (float)image.width * image.height; ++i) {
+            for (size_t i = 0; i < image.width * image.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
@@ -75,9 +71,7 @@ void Model::fillImages(tinygltf::Model& model) {
         images[i].buffer = imageBuffer;
         images[i].bufferSize = imageBufferSize;
     }
-}
 
-void Model::fillMaterials(tinygltf::Model& model) {
     materials.resize(model.materials.size());
     for (size_t m = 0; m < model.materials.size(); m++) {
         tinygltf::Material mat = model.materials[m];
@@ -120,22 +114,6 @@ void Model::findComponent(const tinygltf::Accessor& accessor, const tinygltf::Bu
         std::cerr << "Index component type not supported " << accessor.componentType << "\n \n";
         return;
     }
-}
-
-glm::mat4 Model::matrix() {
-    glm::mat4 matrix(1.0f);
-    
-    for (Node& node : nodes) {
-        matrix = node.matrix;
-        Node* parent = node.parent;
-        
-        while (parent) {
-            matrix = parent->matrix * matrix;
-            parent = parent->parent;
-        }
-    }
-
-    return matrix;
 }
 
 glm::mat4 Model::getMatrix(const tinygltf::Node& node, glm::mat4x4& base) {
@@ -261,9 +239,9 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
     }
 
     if (iNode.children.size() > 0) {
-        for (size_t i = 0; i < iNode.children.size(); i++) {
+        for (Node& node : iNode.children) {
             offset.dynamic += static_cast<uint32_t>(offset.align);
-            drawNode(commandBuffer, pipelineLayout, iNode.children[i], set, offset);
+            drawNode(commandBuffer, pipelineLayout, node, set, offset);
         }
     }
 }

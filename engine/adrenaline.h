@@ -15,14 +15,14 @@ namespace Adren {
 class Engine {
 public:
     void run();
+    void cleanup();
 private:
     GLFWwindow* window;
     void makeWindow();
     void loop();
-    void cleanup();
+    Camera* camera = new Camera;
     Renderer renderer;
-    Camera& camera = renderer.camera;
-    Editor editor{camera};
+    Editor editor;
     RPC* rpc;
 
     uint32_t objects = 1;

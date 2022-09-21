@@ -19,23 +19,21 @@
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance, Camera& camera) : 
-        buffers(buffers), images(images), swapchain(swapchain), instance(instance), camera(camera),
-        device(devices.device), graphicsQueue(devices.graphicsQueue), gpu(devices.gpu), allocator(devices.allocator) {}
+    GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance) : buffers(buffers), images(images), swapchain(swapchain), 
+        instance(instance), device(devices.device), graphicsQueue(devices.graphicsQueue), gpu(devices.gpu), allocator(devices.allocator) {}
 
-    void init(GLFWwindow* window, VkSurfaceKHR& surface);
+    void init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
-    void mouseHandler(GLFWwindow* window);
-    void newFrame(GLFWwindow* window);
-    void viewport();
-    void beginRenderpass(VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer vertex, Buffer index);
+    void mouseHandler(GLFWwindow* window, Camera* camera);
+    void newFrame(GLFWwindow* window, Camera* camera);
+    void viewport(Camera* camera);
+    void beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index);
 
     struct Base {
         VkRenderPass renderpass;
         VkCommandPool commandPool;
         Image color, depth;
         VkFramebuffer framebuffer;
-        VkCommandBuffer commandBuffer;
         VkDescriptorSet set;
         VkImageView view;
         VkSampler sampler;
@@ -45,15 +43,15 @@ public:
     ImGuiStyle* style = nullptr;
 private:
     void createCommands();
-    void createRenderPass();
-    void createFramebuffers();
-    void resize();
+    void createRenderPass(Camera* camera);
+    void createFramebuffers(Camera* camera);
+    void resize(Camera* camera);
     
     Buffers& buffers;
     Swapchain& swapchain;
     Images& images;
 
-    Camera& camera;
+    Camera* camera;
 
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     VkDevice& device;

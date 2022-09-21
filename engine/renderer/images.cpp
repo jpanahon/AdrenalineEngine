@@ -114,24 +114,24 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
     Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
 }
 
-void Images::loadTextures(std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
-    for (Model model : models) {
+void Images::loadTextures(VkInstance& instance, std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
+    for (Model& model : models) {
         for (size_t t = 0; t < model.textures.size(); t++) {
-            Model::Texture texture = model.textures[t];
+            Model::Texture& texture = model.textures[t];
             int32_t index = model.textures[t].index;
-            Model::glTFImage image = model.images[t];
+            Model::glTFImage& image = model.images[t];
 
             Buffer staging;
             buffers.createBuffer(allocator, image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_CPU_ONLY);
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_AUTO);
 
-            uint8_t* data;
-            vmaMapMemory(allocator, staging.memory, (void**)&data);
+            uint8_t *data;
+            vmaMapMemory(allocator, staging.memory, (void**) &data);
             memcpy(data, image.buffer, image.bufferSize);
             vmaUnmapMemory(allocator, staging.memory);
 
             createImage(image.width, image.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY, texture);
+                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, texture);
             transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool);
             copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height), commandPool);
             transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool);
@@ -140,6 +140,11 @@ void Images::loadTextures(std::vector<Model>& models, std::vector<Model::Texture
 
             texture.view = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
             textures.push_back(texture);
+
+        #ifdef DEBUG
+            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)texture.image, "TEXTURE IMAGE");
+            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)texture.view, "TEXTURE IMAGE VIEW");
+        #endif
         }
     }
 }
@@ -161,7 +166,12 @@ void Images::createDepthResources(VkExtent2D extent) {
     }
 
     createImage(extent.width, extent.height, depth.format, VK_IMAGE_TILING_OPTIMAL, 
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY, depth);
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, depth);
     depth.view = createImageView(depth.image, depth.format, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
+
+void Images::cleanup() {
+    vmaDestroyImage(allocator, depth.image, depth.memory);
+}
+
 }

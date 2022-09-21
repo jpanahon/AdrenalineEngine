@@ -13,7 +13,7 @@ class Pipeline {
 public:
 	Pipeline(Devices& devices) : device(devices.device) {}
 	void create(Swapchain& swapchain, VkDescriptorSetLayout& layout, VkRenderPass& renderpass);
-	VkPipeline handle;
+	VkPipeline handle = VK_NULL_HANDLE;
 	VkPipelineLayout layout = VK_NULL_HANDLE;
 private:
 	static std::vector<char> readFile(const std::string& filename);

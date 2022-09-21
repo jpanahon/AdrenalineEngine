@@ -48,7 +48,7 @@ inline VkAttachmentDescription colorAttachment(VkFormat& format) {
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
+    
     return colorAttachment;
 }
 

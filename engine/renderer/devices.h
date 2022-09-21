@@ -18,7 +18,7 @@ class Devices {
 public:
     Devices(VkInstance& instance, VkSurfaceKHR& surface) : instance(instance), surface(surface) {}
 
-    void cleanup() { vkDestroyDevice(device, nullptr); vmaDestroyAllocator(allocator); }
+    void cleanup() { vmaDestroyAllocator(allocator); vkDestroyDevice(device, nullptr);  }
     void pickGPU();
     void createLogicalDevice();
     void createAllocator();

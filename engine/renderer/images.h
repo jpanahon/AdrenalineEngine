@@ -6,7 +6,6 @@
 */
 
 #pragma once
-#include "config.h"
 #include "model.h"
 #include "types.h"
 #include "buffers.h"
@@ -20,8 +19,9 @@ public:
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image);
 	VkImageView createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags);
-	void loadTextures(std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool);
+	void loadTextures(VkInstance& instance, std::vector<Model>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool);
 	void createDepthResources(VkExtent2D extent);
+	void cleanup();
 	Image depth = {};
 private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool& commandPool);

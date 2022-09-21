@@ -22,6 +22,6 @@ void Adren::RPC::update() {
     rpc.details = "Updating engine";
     rpc.startTimestamp = std::time(0);
     rpc.largeImageKey = "adren2";
-    rpc.largeImageText = "This is my game engine.";
+    rpc.largeImageText = "This is my game engine written in C++.";
     Discord_UpdatePresence(&rpc);
 }

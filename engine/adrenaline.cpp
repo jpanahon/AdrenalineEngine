@@ -18,15 +18,19 @@ void Adren::Engine::makeWindow() {
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
     // This attempts to replicate 1200 x 700 in different resolutions to make a consistant viewport.
-    camera.width = mode->width * 62.5 / 100;
-    camera.height = round(mode->height * 64.81 / 100);
+    int32_t width = (int32_t)((double)mode->width * 62.5) / 100;
+    int32_t height = (int32_t)round((double)mode->height * 64.81 / 100);
+    camera->setWidth(width);
+    camera->setHeight(height);
+
+    Adren::Tools::checkSize("Camera Width: ", camera->getWidth());
+    Adren::Tools::checkSize("Camera Height: ", camera->getHeight());
 
     std::string appName = "Adrenaline Engine";
     window = glfwCreateWindow(mode->width, mode->height, appName.c_str(), nullptr, nullptr);
+    glfwSetWindowUserPointer(window, camera);
+    glfwSetCursorPosCallback(window, camera->callback);
 
-    glfwSetWindowUserPointer(window, this);
-  
-    if (camera.toggled) { glfwSetCursorPosCallback(window, camera.callback); }
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     GLFWimage images[1];
@@ -37,25 +41,28 @@ void Adren::Engine::makeWindow() {
 
 void Adren::Engine::loop() {
     while (!glfwWindowShouldClose(window)) {
-        renderer.gui.newFrame(window);
-        renderer.gui.viewport();
-        editor.start(renderer.gui.ctx);
-        renderer.process(window);
-        /*
-        if (editor.modelPaths.size() > renderer.models.size()) {
-            for (int i = renderer.models.size(); i < editor.modelPaths.size(); i++) {
-                renderer.addModel(editor.modelPaths[i]);
-            }
+        glfwPollEvents();
+        if (camera->toggled) {
+            renderer.processInput(window, camera);
+            camera->update();
         }
-        
+
+        renderer.gui.newFrame(window, camera);
+        editor.start(renderer.gui.ctx, camera, renderer);
+        renderer.gui.viewport(camera);
+
         if (objects < renderer.models.size()) {
-            renderer.reloadScene(renderer.models);
+            renderer.wait();
+            renderer.reloadScene(renderer.models, camera);
             objects += renderer.models.size() - objects;
         }
-        */
+
+        renderer.process(camera);
+        
     }
 
     renderer.wait();
+
 }
 
 void Adren::Engine::run() {
@@ -63,12 +70,14 @@ void Adren::Engine::run() {
 	rpc->update();
 
     makeWindow();
-    renderer.init(window);
+    renderer.init(window, camera);
     loop();
-    editor.style(renderer.gui.ctx);
     cleanup();
 }
 
 void Adren::Engine::cleanup() {
-    renderer.cleanup();
+    renderer.cleanup(camera);
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 }

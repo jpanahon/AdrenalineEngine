@@ -17,10 +17,11 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
 add_subdirectory("lib/glfw")
+add_subdirectory("lib/nfd")
 
 message(STATUS "Found Vulkan, Including and Linking now")
 include_directories(${Vulkan_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw)
+target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw nfd)
 
 
 

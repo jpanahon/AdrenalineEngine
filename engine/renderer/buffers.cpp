@@ -47,6 +47,11 @@ void Adren::Buffers::createModelBuffers(std::vector<Model>& models, VkCommandPoo
     copyBuffer(iStaging.buffer, index.buffer, index.size, commandPool);
 
     vmaDestroyBuffer(allocator, iStaging.buffer, iStaging.memory);
+
+#ifdef DEBUG
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertex.buffer, "VERTEX BUFFER");
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)index.buffer, "INDEX BUFFER");
+#endif
 }
 
 void Adren::Buffers::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool& commandPool) {
@@ -68,6 +73,7 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
 
     VmaAllocationCreateInfo vmaAllocInfo{};
     vmaAllocInfo.usage = vmaUsage;
+    vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     vmaAllocInfo.preferredFlags = properties;
 
     vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.memory, nullptr);
@@ -97,6 +103,10 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     createBuffer(allocator, dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform, VMA_MEMORY_USAGE_AUTO);
     vmaMapMemory(allocator, dynamicUniform.memory, &dynamicUniform.mapped);
     memcpy(dynamicUniform.mapped, uboData.model, dynamicUniform.size);
+
+#ifdef DEBUG
+    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)dynamicUniform.buffer, "DYNAMIC UNIFORM");
+#endif
 }
 
 void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model>& models) {
@@ -119,6 +129,6 @@ void Adren::Buffers::cleanup() {
     vmaDestroyBuffer(allocator, vertex.buffer, vertex.memory);
     vmaDestroyBuffer(allocator, index.buffer, index.memory);
 
-    vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
+    //vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
     vmaUnmapMemory(allocator, dynamicUniform.memory);
 }
