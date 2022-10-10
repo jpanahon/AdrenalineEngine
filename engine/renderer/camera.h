@@ -19,7 +19,7 @@ public:
     glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    enum Move {
+    enum Direction {
         Forward, Backward, Left, Right, Jump, Crouch
     };
 
@@ -39,7 +39,7 @@ public:
     int32_t getHeight() { return height; }
     void setWidth(int32_t size) { this->width = size; }
     void setHeight(int32_t size) { this->height = size; }
-    void move(Move direction);
+    void move(Direction direction);
     void setDelta(float delta) { deltaTime = speed * delta; }
     void destroy(VmaAllocator& allocator);
 private:

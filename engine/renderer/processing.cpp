@@ -3,7 +3,7 @@
     Adrenaline Engine
     
     This processes everything.
-*/
+
 
 #include "processing.h"
 #include <cmath>
@@ -146,5 +146,6 @@ void Adren::Processing::render(Camera* camera, std::vector<Model>& models, Buffe
     
     presentInfo.pImageIndices = &imageIndex;
     
-    vkQueuePresentKHR(presentQueue, &presentInfo);
+    vkQueuePresentKHR(presentQueue, &presentInfo); 
 }
+*/

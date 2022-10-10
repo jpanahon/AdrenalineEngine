@@ -26,24 +26,24 @@ bool Adren::Devices::checkDeviceExtensionSupport(VkPhysicalDevice& device) {
     return requiredExtensions.empty();
 }
 
-bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(device, surface);
+bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice& card, VkSurfaceKHR& surface) {
+    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(card, surface);
     
-    bool extensionsSupported = checkDeviceExtensionSupport(device);
+    bool extensionsSupported = checkDeviceExtensionSupport(card);
     
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(device, surface); 
+        SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(card, surface); 
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
     
     VkPhysicalDeviceFeatures supportedFeatures;
-    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+    vkGetPhysicalDeviceFeatures(card, &supportedFeatures);
     
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
-void Adren::Devices::pickGPU() {
+void Adren::Devices::pickGPU(VkSurfaceKHR& surface) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -54,9 +54,9 @@ void Adren::Devices::pickGPU() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device, surface)) {
-            gpu = device;
+    for (auto& card : devices) {
+        if (isDeviceSuitable(card, surface)) {
+            gpu = card;
             break;
         }
     }

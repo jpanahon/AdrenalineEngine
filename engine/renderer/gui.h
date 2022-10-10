@@ -20,7 +20,7 @@ namespace Adren {
 class GUI {
 public:
     GUI(Devices& devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance) : buffers(buffers), images(images), swapchain(swapchain), 
-        instance(instance), device(devices.device), graphicsQueue(devices.graphicsQueue), gpu(devices.gpu), allocator(devices.allocator) {}
+        instance(instance), device(devices.getDevice()), graphicsQueue(devices.getGraphicsQ()), gpu(devices.getGPU()), allocator(devices.getAllocator()) {}
 
     void init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
@@ -28,7 +28,7 @@ public:
     void newFrame(GLFWwindow* window, Camera* camera);
     void viewport(Camera* camera);
     void beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index);
-
+    void draw(VkCommandBuffer& commandBuffer);
     struct Base {
         VkRenderPass renderpass;
         VkCommandPool commandPool;

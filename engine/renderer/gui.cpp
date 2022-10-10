@@ -403,4 +403,8 @@ void Adren::GUI::beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipe
     vkCmdBindIndexBuffer(buffer, index.buffer, 0, VK_INDEX_TYPE_UINT32); 
 }
 
+void Adren::GUI::draw(VkCommandBuffer& commandBuffer) { 
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer); 
+}
+
 

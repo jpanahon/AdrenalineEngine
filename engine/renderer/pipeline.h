@@ -11,7 +11,7 @@
 namespace Adren {
 class Pipeline {
 public:
-	Pipeline(Devices& devices) : device(devices.device) {}
+	Pipeline(Devices& devices) : device(devices.getDevice()) {}
 	void create(Swapchain& swapchain, VkDescriptorSetLayout& layout, VkRenderPass& renderpass);
 	VkPipeline handle = VK_NULL_HANDLE;
 	VkPipelineLayout layout = VK_NULL_HANDLE;

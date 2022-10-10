@@ -11,7 +11,7 @@
 namespace Adren {
 class Descriptor {
 public:
-	Descriptor(Devices& devices, Buffers& buffers) : device(devices.device), buffers(buffers) {}
+	Descriptor(Devices& devices, Buffers& buffers) : device(devices.getDevice()), buffers(buffers) {}
 
 	void createLayout(std::vector<Model>& models);
 	void createPool(std::vector<VkImage>& images);

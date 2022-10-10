@@ -51,13 +51,7 @@ void Adren::Engine::loop() {
         editor.start(renderer.gui.ctx, camera, renderer);
         renderer.gui.viewport(camera);
 
-        if (objects < renderer.models.size()) {
-            renderer.wait();
-            renderer.reloadScene(renderer.models, camera);
-            objects += renderer.models.size() - objects;
-        }
-
-        renderer.process(camera);
+        renderer.render(camera);
         
     }
 

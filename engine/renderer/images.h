@@ -13,8 +13,8 @@
 namespace Adren {
 class Images {
 public:
-	Images(Devices& devices, Buffers& buffers) : device(devices.device), buffers(buffers), 
-		gpu(devices.gpu), graphicsQueue(devices.graphicsQueue), allocator(devices.allocator) {}
+	Images(Devices& devices, Buffers& buffers) : device(devices.getDevice()), buffers(buffers), 
+		gpu(devices.getGPU()), graphicsQueue(devices.getGraphicsQ()), allocator(devices.getAllocator()) {}
 
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image);

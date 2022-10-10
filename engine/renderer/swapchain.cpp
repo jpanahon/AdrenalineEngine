@@ -19,7 +19,7 @@ VkSurfaceFormatKHR Adren::Swapchain::chooseSwapSurfaceFormat(const std::vector<V
     return availableFormats[0];
 }
 
-VkExtent2D Adren::Swapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Adren::Swapchain::chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
@@ -36,12 +36,12 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
     }
 }
 
-void Adren::Swapchain::create(VkSurfaceKHR& surface) {
+void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
     SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(gpu, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D chosenExtent = chooseSwapExtent(swapChainSupport.capabilities);
+    VkExtent2D chosenExtent = chooseSwapExtent(window, swapChainSupport.capabilities);
 
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {

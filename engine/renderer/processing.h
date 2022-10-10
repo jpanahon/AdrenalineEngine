@@ -12,16 +12,12 @@
 namespace Adren {
 class Processing {
 public:
-    Processing(Devices& devices, GLFWwindow* window) : device(devices.device), window(window), gpu(devices.gpu),
-        graphicsQueue(devices.graphicsQueue), presentQueue(devices.presentQueue) {}
+    Processing(Devices& devices, GLFWwindow* window) : device(devices.getDevice()), window(window), gpu(devices.getGPU()),
+        graphicsQueue(devices.getGraphicsQ()), presentQueue(devices.getPresentQ()) {}
 
-    void createCommands(VkSurfaceKHR& surface, VkInstance& instance);
-    void createSyncObjects();
+    
     void render(Camera* camera, std::vector<Model>& models, Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
     void cleanup();
-   
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-    size_t currentFrame = 0;
 private:
     GLFWwindow* window;
     VkDevice& device;

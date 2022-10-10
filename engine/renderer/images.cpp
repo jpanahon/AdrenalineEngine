@@ -103,11 +103,7 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = {
-        width,
-        height,
-        1
-    };
+    region.imageExtent = { width, height, 1 };
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -118,7 +114,7 @@ void Images::loadTextures(VkInstance& instance, std::vector<Model>& models, std:
     for (Model& model : models) {
         for (size_t t = 0; t < model.textures.size(); t++) {
             Model::Texture& texture = model.textures[t];
-            int32_t index = model.textures[t].index;
+            //int32_t index = model.textures[t].index;
             Model::glTFImage& image = model.images[t];
 
             Buffer staging;

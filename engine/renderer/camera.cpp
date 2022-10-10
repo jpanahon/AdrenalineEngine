@@ -75,7 +75,7 @@ void Adren::Camera::update() {
     memcpy(cam.mapped, &camera, sizeof(camera));
 }
 
-void Adren::Camera::move(Move direction) {
+void Adren::Camera::move(Direction direction) {
     switch (direction) {
         case Forward: pos += deltaTime * front; break;
         case Backward: pos -= deltaTime * front; break;

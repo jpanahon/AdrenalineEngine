@@ -16,8 +16,7 @@ class Devices;
 
 class Swapchain {
 public:
-    Swapchain(Devices& devices, GLFWwindow* window) : window(window), 
-        device(devices.device), gpu(devices.gpu) {}
+    Swapchain(Devices& devices) : device(devices.getDevice()), gpu(devices.getGPU()) {}
 
     void cleanup() {
         for (auto framebuffer : framebuffers) {
@@ -31,7 +30,7 @@ public:
         vkDestroySwapchainKHR(device, handle, nullptr);
     }
 
-    void create(VkSurfaceKHR& surface);
+    void create(GLFWwindow* window, VkSurfaceKHR& surface);
     void createFramebuffers(Image& depth, VkRenderPass& renderpass);
     void createImageViews(Images& image);
 
@@ -46,9 +45,8 @@ public:
 private:
     VkDevice& device;
     VkPhysicalDevice& gpu;
-    GLFWwindow* window;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 };
 }

@@ -15,6 +15,7 @@
 #include <set>
 #include "types.h"
 #include "vk_mem_alloc.h"
+#include <regex>
 
 namespace Adren::Tools {
 inline void vibeCheck(std::string name, VkResult x) {
@@ -164,6 +165,12 @@ inline void alignedFree(void* data) {
 #else
     free(data);
 #endif
+}
+
+inline std::string formatPath(std::string& path) {
+    std::string newPath = std::regex_replace(path, std::regex("\\"), "/");
+
+    return newPath;
 }
 
 }

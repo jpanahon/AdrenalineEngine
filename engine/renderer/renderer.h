@@ -16,7 +16,8 @@
     #include "debugging.h"
 #endif
 
-#include "processing.h" // Has all the other components included
+#include "gui.h"
+// #include "processing.h" // Has all the other components included
 #include "descriptor.h"
 
 namespace Adren {
@@ -24,9 +25,9 @@ class Renderer {
 public:
     void init(GLFWwindow* window, Camera* camera);
     void cleanup(Camera* camera);
-    void process(Camera* camera);
+    void render(Camera* camera);
     void reloadScene(std::vector<Model>& models, Camera* camera);
-    void wait() { vkDeviceWaitIdle(devices.device); }
+    void wait() { vkDeviceWaitIdle(devices.getDevice()); }
     void addModel(char* path);
     void processInput(GLFWwindow* window, Camera* camera);
     Model sponza{ "../engine/resources/models/sponza/Sponza.gltf" };
@@ -35,12 +36,20 @@ public:
 private:
     void createInstance();
     void initVulkan(GLFWwindow* window, Camera* camera);
+    void createCommands();
+    void createSyncObjects();
     std::vector<Model::Texture> textures;
-    
+
+    static const int maxFramesInFlight = 3;
+
+    std::array<Frame, maxFramesInFlight> frames = {};
     VkInstance instance;
     VkSurfaceKHR surface;
-    GLFWwindow* window;
+    
     float lastFrame = 0.0f;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
+    size_t currentFrame = 0;
+    size_t objects = models.size();
 
     Devices devices{instance, surface};
 
@@ -49,11 +58,10 @@ private:
 #endif
 
     Buffers buffers{instance, devices};
-    Swapchain swapchain{devices, window};
+    Swapchain swapchain{devices};
     Images images{devices, buffers};
     Renderpass renderpass{devices};
     Descriptor descriptor{devices, buffers};
     Pipeline pipeline{devices};
-    Processing processing{devices, window};
 };
 }
