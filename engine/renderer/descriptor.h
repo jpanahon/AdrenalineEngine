@@ -13,7 +13,7 @@ class Descriptor {
 public:
 	Descriptor(Devices& devices, Buffers& buffers) : device(devices.getDevice()), buffers(buffers) {}
 
-	void createLayout(std::vector<Model>& models);
+	void createLayout(std::vector<Model*>& models);
 	void createPool(std::vector<VkImage>& images);
 	void createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images, Buffer& cam);
 

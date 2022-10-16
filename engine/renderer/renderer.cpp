@@ -156,14 +156,14 @@ void Adren::Renderer::render(Camera* camera) {
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
     gui.beginRenderpass(camera, commandBuffer, pipeline.handle, buffers.vertex, buffers.index);
-
-    Offset offset = { 0, 0, 0, 0, 0, buffers.dynamicUniform.align };
+    
     if (models.size() >= 1) {
-        for (Model& model : models) {
-            for (Model::Node& node : model.nodes) {
-                model.drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset);
+        Offset offset{0, 0, 0, 0, 0, buffers.dynamicUniform.align};
+        for (Model* model : models) {
+            for (Model::Node& node : model->nodes) {
+                model->drawNode(commandBuffer, pipeline.layout, node, descriptor.sets[imageIndex], offset);
             }
-            offset.texture += model.textures.size();
+            offset.texture += model->textures.size();
             offset.dynamic += static_cast<uint32_t>(offset.align);
         }
     }
@@ -223,7 +223,6 @@ void Adren::Renderer::init(GLFWwindow* window, Camera* camera) {
 void Adren::Renderer::cleanup(Camera* camera) {
     Adren::Tools::log("Cleaning up!");
     vkDeviceWaitIdle(devices.getDevice());
-    // processing.cleanup(); Adren::Tools::log("Processing cleaned up!");
     buffers.cleanup(); Adren::Tools::log("Buffers cleaned up!");
     renderpass.cleanup(); Adren::Tools::log("Render pass cleaned up!");
     swapchain.cleanup(); Adren::Tools::log("Swapchain cleaned up!");
@@ -231,15 +230,17 @@ void Adren::Renderer::cleanup(Camera* camera) {
     images.cleanup(); Adren::Tools::log("Images cleaned up!");
     gui.cleanup(); Adren::Tools::log("GUI cleaned up!");
     camera->destroy(devices.getAllocator()); Adren::Tools::log("Camera cleaned up!");
+    delete camera;
 #ifdef DEBUG 
     debugging.cleanup(); Adren::Tools::log("Debugger cleaned up!");
 #endif
 
-    for (auto& m : models) {
-        for (auto& tex : m.textures) {
+    for (Model* m : models) {
+        for (auto& tex : m->textures) {
             vkDestroyImageView(devices.getDevice(), tex.view, nullptr);
             vmaDestroyImage(devices.getAllocator(), tex.image, tex.memory);
         }
+        delete m;
     }
     Adren::Tools::log("Textures cleaned up!");
 
@@ -249,7 +250,7 @@ void Adren::Renderer::cleanup(Camera* camera) {
     devices.cleanup(); Adren::Tools::log("Devices cleaned up!");
 }
 
-void Adren::Renderer::reloadScene(std::vector<Model>& models, Camera* camera) {
+void Adren::Renderer::reloadScene(std::vector<Model*>& models, Camera* camera) {
     /*
         This function would be the basis of model loading, as buffers and descriptors get updated
         when there is a new model. This is experimental and may be causing lots of performance issues
@@ -274,13 +275,28 @@ void Adren::Renderer::reloadScene(std::vector<Model>& models, Camera* camera) {
     }
     textures.clear(); Adren::Tools::log("Textures destroyed..");
 
+    vkDestroyDescriptorSetLayout(devices.getDevice(), descriptor.layout, nullptr);
+    Adren::Tools::log("Descriptor set layout destroyed..");
+
+    vkDestroyDescriptorPool(devices.getDevice(), descriptor.pool, nullptr);
+    Adren::Tools::log("Descriptor pool destroyed..");
+
     images.loadTextures(instance, models, textures, commandPool);
     Adren::Tools::log("Model textures reloaded..");
+
     buffers.createModelBuffers(models, commandPool);
     Adren::Tools::log("Model buffers reloaded..");
 
     buffers.createUniformBuffers(swapchain.images, models);
+    buffers.updateDynamicUniformBuffer(models);
     Adren::Tools::log("Dynamic uniform buffers reloaded..");
+
+
+    descriptor.createLayout(models);
+    Adren::Tools::log("Descriptor set layout reloaded..");
+
+    descriptor.createPool(swapchain.images);
+    Adren::Tools::log("Descriptor pool reloaded..");
 
     descriptor.createSets(textures, swapchain.images, camera->cam);
     Adren::Tools::log("Descriptor sets reloaded..");
@@ -327,7 +343,7 @@ void Adren::Renderer::addModel(char* path) {
     std::replace(newPath.begin(), newPath.end(), '\\', '/');
     Adren::Tools::log(newPath);
 #endif
-    Model model{ newPath };
+    Model* model = new Model(newPath);
     models.push_back(model);
     Adren::Tools::log("New Model added.");
 }

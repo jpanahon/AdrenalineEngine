@@ -227,7 +227,7 @@ void Model::drawNode(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineL
     if (iNode.mesh.primitives.size() > 0) {
         for (Primitive& prim : iNode.mesh.primitives) {
             if (prim.indexCount > 0) {
-                Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
+                Texture& texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
                 const auto index = texture.index + offset.texture;
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 1, &offset.dynamic);
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);

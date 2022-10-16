@@ -26,12 +26,12 @@ public:
     void init(GLFWwindow* window, Camera* camera);
     void cleanup(Camera* camera);
     void render(Camera* camera);
-    void reloadScene(std::vector<Model>& models, Camera* camera);
+    void reloadScene(std::vector<Model*>& models, Camera* camera);
     void wait() { vkDeviceWaitIdle(devices.getDevice()); }
     void addModel(char* path);
     void processInput(GLFWwindow* window, Camera* camera);
-    Model sponza{ "../engine/resources/models/sponza/Sponza.gltf" };
-    std::vector<Model> models = { sponza };
+    Model* sponza = new Model("../engine/resources/models/sponza/Sponza.gltf");
+    std::vector<Model*> models = { sponza };
     GUI gui{devices, buffers, images, swapchain, instance}; 
 private:
     void createInstance();
@@ -50,7 +50,7 @@ private:
     VkCommandPool commandPool = VK_NULL_HANDLE;
     size_t currentFrame = 0;
     size_t objects = models.size();
-
+    
     Devices devices{instance, surface};
 
 #ifdef DEBUG

@@ -70,7 +70,7 @@ void Adren::Camera::update() {
 
     float screen = (float)width / (float)height;
     uint32_t distance = drawDistance * 1000;
-    camera.proj = glm::perspective(glm::radians((float)fov), screen, 0.1f, (float)distance);
+    camera.proj = glm::perspective(glm::radians((float)fov), screen, 0.0001f, (float)distance);
     camera.proj[1][1] *= -1;
     memcpy(cam.mapped, &camera, sizeof(camera));
 }

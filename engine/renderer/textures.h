@@ -12,6 +12,6 @@
 class Texture {
 public:
 	uint32_t width, height = 0;
-	VkImageView view = VK_NULL_HANDLE);
-	VkImage image = VK_NULL_HANDLE
+	VkImageView view = VK_NULL_HANDLE;
+	VkImage image = VK_NULL_HANDLE;
 };

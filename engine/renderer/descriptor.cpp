@@ -7,7 +7,7 @@
 #include "descriptor.h"
 #include "info.h"
 
-void Adren::Descriptor::createLayout(std::vector<Model>& models) {
+void Adren::Descriptor::createLayout(std::vector<Model*>& models) {
     VkDescriptorSetLayoutBinding uboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
 
     VkDescriptorSetLayoutBinding dynamicUboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1);
@@ -41,16 +41,17 @@ void Adren::Descriptor::createLayout(std::vector<Model>& models) {
 
 void Adren::Descriptor::createPool(std::vector<VkImage>& images) {
     std::array<VkDescriptorPoolSize, 4> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; poolSizes[0].descriptorCount = 1000;
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER; poolSizes[1].descriptorCount = 1000;
-    poolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; poolSizes[2].descriptorCount = 1000;
-    poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC; poolSizes[3].descriptorCount = 1000;
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; poolSizes[0].descriptorCount = 100000;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER; poolSizes[1].descriptorCount = 100000;
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; poolSizes[2].descriptorCount = 100000;
+    poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC; poolSizes[3].descriptorCount = 100000;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(images.size());
+    //poolInfo.maxSets = 200;
 
     Adren::Tools::vibeCheck("DESCRIPTOR POOL", vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool));
 }

@@ -7,13 +7,13 @@
 
 #include "buffers.h"
 
-void Adren::Buffers::createModelBuffers(std::vector<Model>& models, VkCommandPool& commandPool) {
+void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
-    for (auto& model : models) {
-        indices.insert(indices.end(), model.indices.begin(), model.indices.end());
-        vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
+    for (auto* model : models) {
+        indices.insert(indices.end(), model->indices.begin(), model->indices.end());
+        vertices.insert(vertices.end(), model->vertices.begin(), model->vertices.end());
     }
 
     vertex.size = sizeof(vertices[0]) * vertices.size();
@@ -79,7 +79,7 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
     vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.memory, nullptr);
 }
 
-void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model>& models) {
+void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models) {
     VkPhysicalDeviceProperties gpuProperties{};
     vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
     VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
@@ -89,9 +89,9 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     }
 
     uint32_t modelSize = 0;
-    for (Model& model : models) { 
-        for (Model::Node& node : model.nodes) {
-            model.count(modelSize, node.children);
+    for (Model* model : models) { 
+        for (Model::Node& node : model->nodes) {
+            model->count(modelSize, node.children);
             modelSize++;
         }
     }
@@ -109,12 +109,12 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
 #endif
 }
 
-void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model>& models) {
+void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     std::vector<glm::mat4> matrices;
-    for (Model& model : models) {
-        for (Model::Node& node : model.nodes) {
+    for (Model* model : models) {
+        for (Model::Node& node : model->nodes) {
             matrices.push_back(node.matrix);
-            model.count(matrices, node.children);
+            model->count(matrices, node.children);
         }
     }
 
