@@ -16,14 +16,14 @@ class Devices;
 
 class Swapchain {
 public:
-    Swapchain(Devices& devices) : device(devices.getDevice()), gpu(devices.getGPU()) {}
+    Swapchain(Devices* devices) : device(devices->getDevice()), gpu(devices->getGPU()) {}
 
     void cleanup() {
-        for (auto framebuffer : framebuffers) {
+        for (VkFramebuffer& framebuffer : framebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
 
-        for (auto imageView : views) {
+        for (VkImageView& imageView : views) {
             vkDestroyImageView(device, imageView, nullptr);
         }
 

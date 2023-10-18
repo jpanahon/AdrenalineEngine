@@ -11,7 +11,7 @@ void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPo
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
-    for (auto* model : models) {
+    for (Model* model : models) {
         indices.insert(indices.end(), model->indices.begin(), model->indices.end());
         vertices.insert(vertices.end(), model->vertices.begin(), model->vertices.end());
     }
@@ -87,15 +87,15 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     if (minUboAlignment > 0) {
         dynamicUniform.align = (dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
-
+    
     uint32_t modelSize = 0;
-    for (Model* model : models) { 
-        for (Model::Node& node : model->nodes) {
-            model->count(modelSize, node.children);
-            modelSize++;
-        }
+    
+    for (Model* model : models) {
+        modelSize += model->modelSize;
     }
 
+    Adren::Tools::checkSize("Model Size: ", modelSize);
+    
     dynamicUniform.size = dynamicUniform.align * modelSize;
     uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(dynamicUniform.size, dynamicUniform.align);
     assert(uboData.model);
@@ -111,13 +111,13 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
 
 void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     std::vector<glm::mat4> matrices;
-    for (Model* model : models) {
-        for (Model::Node& node : model->nodes) {
-            matrices.push_back(node.matrix);
-            model->count(matrices, node.children);
-        }
-    }
 
+    for (Model* model : models) {
+        matrices.insert(matrices.end(), model->matrices.begin(), model->matrices.end());
+    }
+    
+    Adren::Tools::checkSize("Matrices: ", matrices.size());
+    
     VkDeviceSize alignment = dynamicUniform.align * matrices.size();
     memcpy(dynamicUniform.mapped, matrices.data(), alignment);
     vmaFlushAllocation(allocator, dynamicUniform.memory, alignment, sizeof(glm::mat4));
@@ -129,6 +129,7 @@ void Adren::Buffers::cleanup() {
     vmaDestroyBuffer(allocator, vertex.buffer, vertex.memory);
     vmaDestroyBuffer(allocator, index.buffer, index.memory);
 
-    //vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
     vmaUnmapMemory(allocator, dynamicUniform.memory);
+    vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
+    dynamicUniform.mapped = nullptr;
 }

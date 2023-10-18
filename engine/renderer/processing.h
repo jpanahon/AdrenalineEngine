@@ -12,11 +12,11 @@
 namespace Adren {
 class Processing {
 public:
-    Processing(Devices& devices, GLFWwindow* window) : device(devices.getDevice()), window(window), gpu(devices.getGPU()),
-        graphicsQueue(devices.getGraphicsQ()), presentQueue(devices.getPresentQ()) {}
+    Processing(Devices* devices, GLFWwindow* window) : device(devices->getDevice()), window(window), gpu(devices->getGPU()),
+        graphicsQueue(devices->getGraphicsQ()), presentQueue(devices->getPresentQ()) {}
 
     
-    void render(Camera* camera, std::vector<Model*>& models, Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
+    void render(Camera& camera, std::vector<Model*>& models, Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui);
     void cleanup();
 private:
     GLFWwindow* window;

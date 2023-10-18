@@ -7,6 +7,7 @@
 
 #include "images.h"
 #include "tools.h"
+#include <stb/stb_image.h>
 
 namespace Adren {
 void Images::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image) {
@@ -110,64 +111,25 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
     Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
 }
 
-/*
 void Images::loadTextures(VkInstance& instance, std::vector<Model*>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
     for (Model* model : models) {
-        size_t textureSize = model->textures.size();
-        for (size_t t = 0; t < textureSize; t++) {
-            Model::Texture& texture = model->textures[t];
-            //int32_t index = model.textures[t].index;
-            Model::glTFImage* image = &model->images[t];
-
-            Buffer staging;
-            buffers.createBuffer(allocator, image->bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_AUTO);
-
-            uint8_t *data;
-            vmaMapMemory(allocator, staging.memory, (void**) &data);
-            memcpy(data, image->buffer, image->bufferSize);
-            vmaUnmapMemory(allocator, staging.memory);
-
-            createImage(image->width, image->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, texture);
-            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool);
-            copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(image->width), static_cast<uint32_t>(image->height), commandPool);
-            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool);
-
-            vmaDestroyBuffer(allocator, staging.buffer, staging.memory);
-
-            texture.view = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-            textures.push_back(texture);
-
-        #ifdef DEBUG
-            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)texture.image, "TEXTURE IMAGE");
-            Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)texture.view, "TEXTURE IMAGE VIEW");
-        #endif
-        }
-    }
-}
-*/
-
-void Images::loadTextures(VkInstance& instance, std::vector<Model*>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
-    for (Model* model : models) {
-        for (Model::glTFImage image : model->images) {
+        for (Model::glTFImage& image : model->images) {
             Model::Texture texture{};
-            //int32_t index = model.textures[t].index;
-            Model::glTFImage* ptr = &image;
 
             Buffer staging;
-            buffers.createBuffer(allocator, ptr->bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            buffers.createBuffer(allocator, image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_AUTO);
 
             uint8_t* data;
             vmaMapMemory(allocator, staging.memory, (void**)&data);
-            memcpy(data, ptr->buffer, ptr->bufferSize);
+            memcpy(data, image.buffer, image.bufferSize);
             vmaUnmapMemory(allocator, staging.memory);
+            stbi_image_free(image.buffer);
 
-            createImage(ptr->width, ptr->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+            createImage(image.width, image.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                 VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, texture);
             transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool);
-            copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(ptr->width), static_cast<uint32_t>(ptr->height), commandPool);
+            copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height), commandPool);
             transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool);
 
             vmaDestroyBuffer(allocator, staging.buffer, staging.memory);

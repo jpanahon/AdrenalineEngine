@@ -1,8 +1,8 @@
 /*
-    devices.cpp
+    devices->cpp
     Adrenaline Engine
 
-    This handles things related to the physical or logical devices.
+    This handles things related to the physical or logical devices->
 */
 
 #include "devices.h"
@@ -73,6 +73,7 @@ void Adren::Devices::createLogicalDevice() {
     
     VkDeviceQueueCreateInfo queueCreateInfo = Adren::Info::deviceQueueCreateInfo();
     float queuePriority = 1.0f;
+
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         queueCreateInfo.queueFamilyIndex = queueFamily;
         queueCreateInfo.pQueuePriorities = &queuePriority;
@@ -129,6 +130,7 @@ std::vector<const char*> Adren::Devices::getRequiredExtensions() {
 
     return extensions;
 }
+
 #ifdef DEBUG
 bool Adren::Devices::checkDebugSupport() {
     uint32_t layerCount;
@@ -151,7 +153,8 @@ bool Adren::Devices::checkDebugSupport() {
             return false;
         }
     }
-
+  
+    
     return true;
 }
 #endif
@@ -161,6 +164,9 @@ void Adren::Devices::createAllocator() {
     vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
     vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
+    VmaAllocationCreateFlags flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | 
+                                     VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
     VmaAllocatorCreateInfo allocatorInfo{};
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
     allocatorInfo.physicalDevice = gpu;
@@ -168,5 +174,6 @@ void Adren::Devices::createAllocator() {
     allocatorInfo.instance = instance;
     allocatorInfo.preferredLargeHeapBlockSize = 0;
     allocatorInfo.pVulkanFunctions = &vulkanFunctions;
+    allocatorInfo.flags = flags;
     vmaCreateAllocator(&allocatorInfo, &allocator);
 }

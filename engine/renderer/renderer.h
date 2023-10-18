@@ -17,32 +17,32 @@
 #endif
 
 #include "gui.h"
-// #include "processing.h" // Has all the other components included
 #include "descriptor.h"
 
 namespace Adren {
 class Renderer {
 public:
-    void init(GLFWwindow* window, Camera* camera);
-    void cleanup(Camera* camera);
-    void render(Camera* camera);
-    void reloadScene(std::vector<Model*>& models, Camera* camera);
-    void wait() { vkDeviceWaitIdle(devices.getDevice()); }
+    void init(GLFWwindow* window, Camera& camera);
+    void cleanup(Camera& camera);
+    void render(Camera& camera);
+    void reloadScene(std::vector<Model*>& models, Camera& camera);
+    void wait() { vkDeviceWaitIdle(devices->getDevice()); }
     void addModel(char* path);
-    void processInput(GLFWwindow* window, Camera* camera);
-    Model* sponza = new Model("../engine/resources/models/sponza/Sponza.gltf");
+    void processInput(GLFWwindow* window, Camera& camera);
+    Model* sponza = new Model("../engine/resources/models/sponza/sponza.gltf");
     std::vector<Model*> models = { sponza };
+    Devices* devices = new Devices{instance, surface};
     GUI gui{devices, buffers, images, swapchain, instance}; 
 private:
     void createInstance();
-    void initVulkan(GLFWwindow* window, Camera* camera);
+    void initVulkan(GLFWwindow* window, Camera& camera);
     void createCommands();
     void createSyncObjects();
     std::vector<Model::Texture> textures;
 
     static const int maxFramesInFlight = 3;
 
-    std::array<Frame, maxFramesInFlight> frames = {};
+    std::array<Frame, maxFramesInFlight> frames;
     VkInstance instance;
     VkSurfaceKHR surface;
     
@@ -51,7 +51,6 @@ private:
     size_t currentFrame = 0;
     size_t objects = models.size();
     
-    Devices devices{instance, surface};
 
 #ifdef DEBUG
     Debugger debugging{instance};

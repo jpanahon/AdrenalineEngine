@@ -14,7 +14,6 @@
 namespace Adren {
 class Camera {
 public:
-    bool toggled = true;
     glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.3f);
     glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -39,11 +38,15 @@ public:
     int32_t getHeight() { return height; }
     void setWidth(int32_t size) { this->width = size; }
     void setHeight(int32_t size) { this->height = size; }
+    bool& isToggled() { return toggled; }
+    void disable() { toggled = false; }
+    void enable() { toggled = true; }
     void move(Direction direction);
     void setDelta(float delta) { deltaTime = speed * delta; }
     void destroy(VmaAllocator& allocator);
 private:
     // This checks if it is the first time the mouse has been used.
+    bool toggled = true;
     bool firstMouse = true;
     float deltaTime = 0.0;
     int32_t height = 0;

@@ -10,6 +10,7 @@
 #include "renderer/renderer.h"
 #include "discord/discord.h"
 #include "editor/editor.h"
+#include "stb/stb_image.h"
 
 namespace Adren {
 class Engine {
@@ -20,8 +21,8 @@ private:
     GLFWwindow* window;
     void makeWindow();
     void loop();
-    Camera* camera = new Camera;
-    Renderer renderer;
+    Camera camera{};
+    Renderer renderer{};
     Editor editor;
     RPC* rpc;
 

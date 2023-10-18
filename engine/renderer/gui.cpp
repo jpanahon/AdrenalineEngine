@@ -12,7 +12,7 @@
 #include "info.h"
 #include <glm/gtc/type_ptr.hpp>
 
-void Adren::GUI::init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface) {
+void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -40,6 +40,8 @@ void Adren::GUI::init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface)
     ctx = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx);
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     
     io.Fonts->AddFontFromFileTTF("../engine/resources/fonts/Montserrat-Regular.ttf", 14);
 
@@ -101,6 +103,7 @@ void Adren::GUI::init(Camera* camera, GLFWwindow* window, VkSurfaceKHR& surface)
     guiInfo.ImageCount = swapchain.imageCount;
     guiInfo.CheckVkResultFn = NULL;
     guiInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
     ImGui_ImplVulkan_Init(&guiInfo, base.renderpass);
 
     VkCommandBuffer commandBuffer = Adren::Tools::beginSingleTimeCommands(device, base.commandPool);
@@ -131,52 +134,47 @@ void Adren::GUI::cleanup() {
     vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
     vkDestroyImageView(device, base.depth.view, nullptr);
     vkDestroyRenderPass(device, base.renderpass, nullptr);
-    vkDestroyFramebuffer(device, base.framebuffer, nullptr);
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext(); 
+    vkDestroyFramebuffer(device, base.framebuffer, nullptr); 
 }
 
-void Adren::GUI::mouseHandler(GLFWwindow* window, Camera* camera) {
+void Adren::GUI::mouseHandler(GLFWwindow* window, Camera& camera) {
     ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureMouse) {
-        camera->toggled = false;
-    } else {
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && rightClick == true) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            glfwSetCursorPos(window, savedX, savedY);
-            rightClick = false;
-        }
-    }
+
+    if (io.WantCaptureMouse && rightClick == true) camera.disable();
+
+    if (rightClick) { camera.disable(); } else { camera.enable(); }
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && rightClick == false) {
-        int centerX = camera->getWidth() / 2;
-        int centerY = camera->getHeight() / 2;
+        int centerX = camera.getWidth() / 2;
+        int centerY = camera.getHeight() / 2;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetCursorPos(window, centerX, centerY);
-        savedX = io.MousePos.x;
-        savedY = io.MousePos.y;
         rightClick = true;
     }
 
-    if (rightClick) { camera->toggled = false; } else { camera->toggled = true; }
 
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && rightClick == true) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        rightClick = false;
+    }
 }
 
-void Adren::GUI::newFrame(GLFWwindow* window, Camera* camera) {
+void Adren::GUI::newFrame(GLFWwindow* window, Camera& camera) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     mouseHandler(window, camera);
+    ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+
 }
 
-void Adren::GUI::createRenderPass(Camera* camera) {
-    images.createImage(camera->getWidth(), camera->getHeight(), swapchain.imgFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
+void Adren::GUI::createRenderPass(Camera& camera) {
+    images.createImage(camera.getWidth(), camera.getHeight(), swapchain.imgFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
         | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, base.color);
     
     base.color.view = images.createImageView(base.color.image, swapchain.imgFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    images.createImage(camera->getWidth(), camera->getHeight(), images.depth.format, VK_IMAGE_TILING_OPTIMAL,
+    images.createImage(camera.getWidth(), camera.getHeight(), images.depth.format, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, base.depth);
 
     base.depth.view = images.createImageView(base.depth.image, images.depth.format, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -261,7 +259,7 @@ void Adren::GUI::createRenderPass(Camera* camera) {
 #endif
 }
 
-void Adren::GUI::createFramebuffers(Camera* camera) {
+void Adren::GUI::createFramebuffers(Camera& camera) {
     VkImageView attachments[2];
     attachments[0] = base.color.view;
     attachments[1] = base.depth.view;
@@ -271,8 +269,8 @@ void Adren::GUI::createFramebuffers(Camera* camera) {
     framebufferInfo.renderPass = base.renderpass;
     framebufferInfo.attachmentCount = 2;
     framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = camera->getWidth();
-    framebufferInfo.height = camera->getHeight();
+    framebufferInfo.width = camera.getWidth();
+    framebufferInfo.height = camera.getHeight();
     framebufferInfo.layers = 1;
 
     Adren::Tools::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
@@ -288,7 +286,7 @@ void Adren::GUI::createCommands() {
 
 // This function recreates images, renderpassand framebuffer used to display the Vulkan scene to the GUI.
 // It re-renders the scene in a different display resolution dictated by the viewport function.
-void Adren::GUI::resize(Camera* camera) {
+void Adren::GUI::resize(Camera& camera) {
     // Destroying the images because we would have to recreate it in a different size.
     vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
     vmaDestroyImage(allocator, base.color.image, base.color.memory);
@@ -308,20 +306,17 @@ void Adren::GUI::resize(Camera* camera) {
 }
 
 // This function sets up the viewport element of the editor that shows what Vulkan is rendering.
-void Adren::GUI::viewport(Camera* camera) {
+void Adren::GUI::viewport(Camera& camera) {
 
     // Clearing padding and setting the minimum size of the viewport to be 800 x 600.
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(800, 600));
 
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
+    //ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollWithMouse;
 
-    ImGui::SetWindowSize(ImVec2(camera->getWidth(), camera->getHeight())); // We are setting the window default window size
-
-    // This positions the viewport in the center of your screen, although you can resize it.
-    ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-
+    ImGui::SetNextWindowSize(ImVec2(camera.getWidth(), camera.getHeight())); // We are setting the window default window size
+    
     // We are creating the viewport object itself, the bool is there to make it a non-closable window.
     bool yep = true;
     ImGui::Begin("Viewport", &yep, flags);
@@ -330,13 +325,13 @@ void Adren::GUI::viewport(Camera* camera) {
     ImVec2 size = ImGui::GetContentRegionAvail();
 
     // Thank you olkotov for inspiration https://github.com/ocornut/imgui/issues/1287#issuecomment-1093514753
-    if (size.x != camera->getWidth() || size.y != camera->getHeight()) {
+    if (size.x != camera.getWidth() || size.y != camera.getHeight()) {
         if (size.x <= 0 || size.y <= 0) {
             return;
         }
 
-        camera->setWidth(size.x);
-        camera->setHeight(size.y);
+        camera.setWidth(size.x);
+        camera.setHeight(size.y);
 
         vkDeviceWaitIdle(device);
         resize(camera);
@@ -349,7 +344,7 @@ void Adren::GUI::viewport(Camera* camera) {
     if (ImGui::BeginTabBar("ViewportTabBar")) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
         if (ImGui::BeginTabItem("Scene")) {
-            ImGui::Image((ImTextureID)base.set, ImVec2(camera->getWidth(), camera->getHeight()));
+            ImGui::Image((ImTextureID)base.set, ImVec2(camera.getWidth(), camera.getHeight()));
             ImGui::EndTabItem();
         }
 
@@ -361,14 +356,14 @@ void Adren::GUI::viewport(Camera* camera) {
     ImGui::End();
 }
 
-void Adren::GUI::beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index) {
+void Adren::GUI::beginRenderpass(Camera& camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index) {
     VkRenderPassBeginInfo renderpassInfo{};
     renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpassInfo.renderPass = base.renderpass;
     renderpassInfo.framebuffer = base.framebuffer;
     renderpassInfo.renderArea.offset = { 0, 0 };
-    renderpassInfo.renderArea.extent.width = camera->getWidth();
-    renderpassInfo.renderArea.extent.height = camera->getHeight();
+    renderpassInfo.renderArea.extent.width = camera.getWidth();
+    renderpassInfo.renderArea.extent.height = camera.getHeight();
 
     VkClearValue clearValues[2];
     clearValues[0].color = { 0.119f, 0.181f, 0.254f, 1.0f };
@@ -380,14 +375,14 @@ void Adren::GUI::beginRenderpass(Camera* camera, VkCommandBuffer& buffer, VkPipe
     vkCmdBeginRenderPass(buffer, &renderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport{};
-    viewport.width = (float)camera->getWidth();
-    viewport.height = (float)camera->getHeight();
+    viewport.width = (float) camera.getWidth();
+    viewport.height = (float) camera.getHeight();
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
-    scissor.extent.width = camera->getWidth();
-    scissor.extent.height = camera->getHeight();
+    scissor.extent.width = camera.getWidth();
+    scissor.extent.height = camera.getHeight();
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 

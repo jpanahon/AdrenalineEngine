@@ -16,16 +16,13 @@ void Adren::Descriptor::createLayout(std::vector<Model*>& models) {
 
     VkDescriptorSetLayoutBinding textureBinding = Adren::Info::textureLayoutBinding(2048);
 
-
     std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboBinding, dynamicUboBinding, samplerBinding, textureBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 
     VkDescriptorBindingFlags flags[4];
-    flags[0] = 0;
-    flags[1] = 0;
-    flags[2] = 0;
+    flags[0] = 0; flags[1] = 0; flags[2] = 0;
     flags[3] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 
     VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags{};
@@ -51,7 +48,6 @@ void Adren::Descriptor::createPool(std::vector<VkImage>& images) {
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(images.size());
-    //poolInfo.maxSets = 200;
 
     Adren::Tools::vibeCheck("DESCRIPTOR POOL", vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool));
 }
@@ -88,7 +84,22 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
     sets.resize(setCount);
     Adren::Tools::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, sets.data()));
 
-    for (size_t i = 0; i < sets.size(); i++) {
+    VkSamplerCreateInfo sampInfo = Adren::Info::samplerInfo();
+    Adren::Tools::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));
+
+    VkDescriptorImageInfo samplerInfo{};
+    samplerInfo.sampler = sampler;
+    std::vector<VkDescriptorImageInfo> imageInfo;
+
+    for (int i = 0; i < textureSize; i++) {
+        VkDescriptorImageInfo info;
+        info.sampler = sampler;
+        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info.imageView = textures[i].view;
+        imageInfo.push_back(info);
+    }
+
+    for (VkDescriptorSet& set : sets) {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = cam.buffer;
         bufferInfo.offset = 0;
@@ -99,33 +110,19 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
         dynamicBufferInfo.offset = 0;
         dynamicBufferInfo.range = sizeof(glm::mat4);
 
-        VkSamplerCreateInfo sampInfo = Adren::Info::samplerInfo();
-        Adren::Tools::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));
-
-        VkDescriptorImageInfo samplerInfo{};
-        samplerInfo.sampler = sampler;
-        std::vector<VkDescriptorImageInfo> imageInfo;
-        for (uint32_t t = 0; t < textureSize; t++) {
-            VkDescriptorImageInfo info;
-            info.sampler = sampler;
-            info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info.imageView = textures[t].view;
-            imageInfo.push_back(info);
-        }
-
         std::array<VkWriteDescriptorSet, 4> dWrites{};
 
         size_t count = 1;
-        fillWrites(dWrites, 0, sets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, count);
+        fillWrites(dWrites, 0, set, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, count);
         dWrites[0].pBufferInfo = &bufferInfo;
 
-        fillWrites(dWrites, 1, sets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, count);
+        fillWrites(dWrites, 1, set, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, count);
         dWrites[1].pBufferInfo = &dynamicBufferInfo;
 
-        fillWrites(dWrites, 2, sets[i], 2, VK_DESCRIPTOR_TYPE_SAMPLER, count);
+        fillWrites(dWrites, 2, set, 2, VK_DESCRIPTOR_TYPE_SAMPLER, count);
         dWrites[2].pImageInfo = &samplerInfo;
 
-        fillWrites(dWrites, 3, sets[i], 3, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureSize);
+        fillWrites(dWrites, 3, set, 3, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureSize);
         dWrites[3].pImageInfo = imageInfo.data();
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(dWrites.size()), dWrites.data(), 0, nullptr);

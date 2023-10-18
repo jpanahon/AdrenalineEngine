@@ -70,7 +70,7 @@ void Adren::Processing::createSyncObjects() {
     }
 }
 
-void Adren::Processing::render(Camera* camera, std::vector<Model*>& models, Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui) {
+void Adren::Processing::render(Camera& camera, std::vector<Model*>& models, Buffers& buffers, Pipeline& pipeline, Descriptor& descriptor, Swapchain& swapchain, Renderpass& renderpass, GUI& gui) {
     ImGui::Render();
 
     currentFrame = (currentFrame + 1) % maxFramesInFlight;

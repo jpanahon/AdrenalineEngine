@@ -8,9 +8,12 @@
 namespace Adren {
 class Editor {
 public:
-    void start(ImGuiContext* ctx, Camera* camera, Renderer& renderer);
-    void cameraInfo(bool* open, Camera* camera);
-    std::vector<std::string> modelPaths;
+    void start(ImGuiContext* ctx, Camera& camera, Renderer& renderer);
+    void cameraInfo(bool* open, Camera& camera);
+    void leftPanel();
+    void rightPanel();
+    void bottomPanel();
+    void topPanel();
 private:
     bool showCameraInfo = false;
 };

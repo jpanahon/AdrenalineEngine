@@ -125,3 +125,8 @@ struct Image {
     VkImageView view;
     VkFormat format;
 };
+
+struct PushConstant {
+    uint32_t textureIndex;
+    glm::mat4 transform;
+};

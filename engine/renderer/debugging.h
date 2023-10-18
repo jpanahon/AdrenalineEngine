@@ -11,7 +11,6 @@
 namespace Adren {
 class Debugger {
 public:
-    
     Debugger(VkInstance& instance) : instance(instance) {}
 
     void cleanup() { destroyUtils(instance, debugMessenger, nullptr); }

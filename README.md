@@ -10,8 +10,8 @@ NOTE: Currently this engine is in pre-beta meaning it is not suitable for end us
 <li> Support for rendering more than one 3D model </li>
 <li> Limited glTF support (currently can load most glTF models with textures) </li>
 <li> First person camera system </li>
-<li> Limited graphical user interface (currently only thing in the user interface is camera properties) </li>
-<li> Limited model manipulation (currently able to change the angle of rotation and axis, scale, and position of individual models) </li>
+<li> Limited graphical user interface (currently only thing in the user interface is a viewport, menubar, and some debug stuff) </li>
+<li> Runtime model loading. (currently needs a model pre-loaded to work) </li>
 
 # Goals for the engine 🥅
 <li> Implement Full User Interface.  </li>
@@ -26,7 +26,7 @@ NOTE: Currently this engine is in pre-beta meaning it is not suitable for end us
 <li> Ultimately create a game using the engine. </li>
 
 # Libraries Used 📚
-<li> Discord Rich Presence: </li>
+<li> Discord Rich Presence: https://github.com/discord/discord-rpc </li>
 <li> Rendering: https://vulkan.org/ </li>
 <li> Window Creation: https://github.com/glfw/glfw </li> 
 <li> Model Manipulation and Math: https://github.com/g-truc/glm </li>

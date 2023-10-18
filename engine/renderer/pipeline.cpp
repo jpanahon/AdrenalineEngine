@@ -7,7 +7,7 @@
 #include "pipeline.h"
 #include "info.h"
 
-std::vector<char> Adren::Pipeline::readFile(const std::string& filename) {
+std::vector<uint32_t> Adren::Pipeline::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
@@ -15,21 +15,21 @@ std::vector<char> Adren::Pipeline::readFile(const std::string& filename) {
     }
 
     size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
+    std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
 
     file.seekg(0);
-    file.read(buffer.data(), fileSize);
+    file.read((char *)buffer.data(), fileSize);
 
     file.close();
 
     return buffer;
 }
 
-VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<char>& code) {
+VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<uint32_t>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    createInfo.codeSize = code.size() * sizeof(uint32_t);
+    createInfo.pCode = code.data();
 
     VkShaderModule shaderModule;
 
@@ -99,9 +99,9 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
     pipelineLayoutInfo.pSetLayouts = &dLayout;
 
     VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(glm::mat4);
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
@@ -129,4 +129,9 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
+}
+
+void Adren::Pipeline::cleanup() {
+    vkDestroyPipelineLayout(device, layout, nullptr);
+    vkDestroyPipeline(device, handle, nullptr);
 }

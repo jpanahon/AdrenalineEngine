@@ -1,6 +1,6 @@
 /*
     Adrenaline Engine
-    camera->cpp
+    camera.cpp
 
     This handles the definitions of camera.h
 */
@@ -87,6 +87,6 @@ void Adren::Camera::move(Direction direction) {
 }
 
 void Adren::Camera::destroy(VmaAllocator& allocator) { 
-    //vmaDestroyBuffer(allocator, cam.buffer, cam.memory);
     vmaUnmapMemory(allocator, cam.memory);
+    vmaDestroyBuffer(allocator, cam.buffer, cam.memory);
 }

@@ -14,8 +14,8 @@
 namespace Adren {
 class Buffers {
 public:
-	Buffers(VkInstance& instance, Devices& devices) : device(devices.getDevice()), allocator(devices.getAllocator()),
-		gpu(devices.getGPU()), graphicsQueue(devices.getGraphicsQ()), instance(instance) {}
+	Buffers(VkInstance& instance, Devices* devices) : device(devices->getDevice()), allocator(devices->getAllocator()),
+		gpu(devices->getGPU()), graphicsQueue(devices->getGraphicsQ()), instance(instance) {}
 
 	void createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool);
 	void createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models);
