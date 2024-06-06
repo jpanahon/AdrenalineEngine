@@ -34,8 +34,8 @@ public:
 
     void create(GLFWwindow* window, Buffers& buffers, VmaAllocator& allocator);
     void update();
-    int32_t getWidth() { return width; }
-    int32_t getHeight() { return height; }
+    int32_t getWidth() const { return width; }
+    int32_t getHeight() const { return height; }
     void setWidth(int32_t size) { this->width = size; }
     void setHeight(int32_t size) { this->height = size; }
     bool& isToggled() { return toggled; }

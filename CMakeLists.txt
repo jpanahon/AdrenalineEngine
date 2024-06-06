@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.25)
 project(Adrenaline-Engine)
 
 set(CMAKE_CXX_STANDARD 20)
-add_compile_definitions(DEBUG)
+
+# Comment this out to enable release mode.
+add_compile_definitions(ADREN_DEBUG)
 
 file(GLOB SOURCE_FILES 
 	"main.cpp" 

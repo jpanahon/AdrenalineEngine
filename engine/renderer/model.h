@@ -7,9 +7,6 @@
 
 #pragma once
 #include "types.h"
-#include <fastgltf/parser.hpp>
-#include <fastgltf/types.hpp>
-#include <fastgltf/tools.hpp>
 #include <fastgltf/glm_element_traits.hpp>
 
 #include <glm/glm.hpp>
@@ -69,6 +66,7 @@ public:
       
     // Taken from fastgltf's gl_viewer example.
     glm::mat4 getTransformMatrix(const fastgltf::Node& node, glm::mat4x4& base);
+    std::vector<Texture> getTextures();
 private:
     bool loadImages(fastgltf::Image& image);
     bool loadMaterials(fastgltf::Material& material);

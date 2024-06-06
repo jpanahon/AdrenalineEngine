@@ -2,6 +2,10 @@
 #include "tools.h"
 #include "info.h"
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& instance) {
     VkAttachmentDescription colorAttachment = Adren::Info::colorAttachment(imageFormat);
     VkAttachmentDescription depthAttachment = Adren::Info::depthAttachment(depth.format);
@@ -19,8 +23,6 @@ void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& 
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorReference;
     subpass.pDepthStencilAttachment = &depthReference;
-
-    //VkSubpassDependency dependency = Adren::Info::dependency();
 
     std::array<VkSubpassDependency, 2> dependencies;
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -49,7 +51,11 @@ void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& 
     renderPassInfo.dependencyCount = 2;
     renderPassInfo.pDependencies = dependencies.data();
 
-    Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &renderPassInfo, nullptr, &handle));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &renderPassInfo, nullptr, &handle));
+#else
+    vkCreateRenderPass(device, &renderPassInfo, nullptr, &handle)
+#endif
 }
 
 void Adren::Renderpass::begin(VkCommandBuffer& commandBuffer, uint32_t& index, std::vector<VkFramebuffer>& framebuffers, VkExtent2D& extent) {

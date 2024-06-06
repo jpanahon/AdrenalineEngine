@@ -12,8 +12,8 @@
 #include "model.h"
 #include "camera.h"
 
-#ifdef DEBUG
-    #include "debugging.h"
+#ifdef ADREN_DEBUG
+    #include "debugger.h"
 #endif
 
 #include "gui.h"
@@ -29,11 +29,12 @@ public:
     void wait() { vkDeviceWaitIdle(devices->getDevice()); }
     void addModel(char* path);
     void processInput(GLFWwindow* window, Camera& camera);
+    //Model* cubes = new Model("../engine/resources/models/deccer/cubes.gltf");
     Model* sponza = new Model("../engine/resources/models/sponza/sponza.gltf");
     std::vector<Model*> models = { sponza };
     Devices* devices = new Devices{instance, surface};
-    GUI gui{devices, buffers, images, swapchain, instance}; 
-private:
+    GUI gui{devices, buffers, images, swapchain, instance};
+
     void createInstance();
     void initVulkan(GLFWwindow* window, Camera& camera);
     void createCommands();
@@ -51,9 +52,34 @@ private:
     size_t currentFrame = 0;
     size_t objects = models.size();
     
+#ifdef ADREN_DEBUG
+    // This sets up Vulkan validation layers.
 
-#ifdef DEBUG
-    Debugger debugging{instance};
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+
+    void fillDebugInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+    VkResult createDebugUtils(
+        VkInstance instance, 
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
+        const VkAllocationCallbacks* pAllocator, 
+        VkDebugUtilsMessengerEXT* pDebugMessenger
+    );
+
+    void destroyDebugUtils(
+        VkInstance instance, 
+        VkDebugUtilsMessengerEXT debugMessenger, 
+        const VkAllocationCallbacks* pAllocator
+    );
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+        VkDebugUtilsMessageTypeFlagsEXT messageType, 
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
+        void* pUserData
+    );
+
+    void setupDebugger();
 #endif
 
     Buffers buffers{instance, devices};

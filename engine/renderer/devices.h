@@ -21,12 +21,12 @@ public:
     void init(VkSurfaceKHR& surface) { pickGPU(surface); createLogicalDevice(); createAllocator(); }
     void cleanup() { vmaDestroyAllocator(getAllocator()); vkDestroyDevice(device, nullptr);  }
     std::vector<const char*> getRequiredExtensions();
-#ifdef DEBUG
+#ifdef ADREN_DEBUG
     bool checkDebugSupport();
 #endif
     VkDevice& getDevice() { return device;  }
     VkPhysicalDevice& getGPU() { return gpu; }
-    VmaAllocator& getAllocator() { return allocator; }
+    VmaAllocator& getAllocator()  { return allocator; }
     const std::vector<const char*>& getDebugLayers() const { return validationLayers;  }
     VkQueue& getPresentQ() { return presentQueue; }
     VkQueue& getGraphicsQ() { return graphicsQueue; }

@@ -9,6 +9,10 @@
 #include "swapchain.h"
 #include "images.h"
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 VkSurfaceFormatKHR Adren::Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
     for (const auto& availableFormat : availableFormats) {
         if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -23,17 +27,16 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(GLFWwindow* window, const VkSurfac
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
-    else {
-        int width, height;
+    
+    int width, height;
 
-        glfwGetFramebufferSize(window, &width, &height);
-        VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    glfwGetFramebufferSize(window, &width, &height);
+    VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
-        actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-        actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+    actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+    actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
-        return actualExtent;
-    }
+    return actualExtent;
 }
 
 void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
@@ -78,7 +81,7 @@ void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
 
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    Adren::Tools::vibeCheck("SWAPCHAIN", vkCreateSwapchainKHR(device, &createInfo, nullptr, &handle));
+    Adren::Debugger::vibeCheck("SWAPCHAIN", vkCreateSwapchainKHR(device, &createInfo, nullptr, &handle));
 
     vkGetSwapchainImagesKHR(device, handle, &imageCount, nullptr);
     images.resize(imageCount);
@@ -121,7 +124,11 @@ void Adren::Swapchain::createFramebuffers(Image& depth, VkRenderPass& renderpass
         framebufferInfo.height = extent.height;
         framebufferInfo.layers = 1;
 
-        Adren::Tools::vibeCheck("SWAPCHAIN FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+#ifdef ADREN_DEBUG
+        Adren::Debugger::vibeCheck("SWAPCHAIN FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+#else
+        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+#endif
     }
 }
 

@@ -26,7 +26,7 @@ void Adren::Editor::start(ImGuiContext* ctx, Camera& camera, Renderer& renderer)
                     renderer.addModel(outPath);
                     NFD_FreePath(outPath);
                 } else if (result == NFD_CANCEL) {
-                    Adren::Tools::log("User pressed cancel.");
+                    std::cerr << "User pressed cancel" << std::endl;
                 } else {
                     std::cerr << "Error: " << NFD_GetError() << "\n \n" << std::endl;
                 }

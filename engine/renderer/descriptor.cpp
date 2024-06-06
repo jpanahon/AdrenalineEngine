@@ -7,6 +7,10 @@
 #include "descriptor.h"
 #include "info.h"
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 void Adren::Descriptor::createLayout(std::vector<Model*>& models) {
     VkDescriptorSetLayoutBinding uboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
 
@@ -33,10 +37,15 @@ void Adren::Descriptor::createLayout(std::vector<Model*>& models) {
     layoutInfo.pBindings = bindings.data();
     layoutInfo.pNext = &bindingFlags;
 
-    Adren::Tools::vibeCheck("DESCRIPTOR SET LAYOUT", vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("DESCRIPTOR SET LAYOUT", vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout));
+#else
+    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
+#endif
 }
 
 void Adren::Descriptor::createPool(std::vector<VkImage>& images) {
+    // This block creates 4 descriptor pools with different types
     std::array<VkDescriptorPoolSize, 4> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; poolSizes[0].descriptorCount = 100000;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER; poolSizes[1].descriptorCount = 100000;
@@ -49,7 +58,11 @@ void Adren::Descriptor::createPool(std::vector<VkImage>& images) {
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(images.size());
 
-    Adren::Tools::vibeCheck("DESCRIPTOR POOL", vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("DESCRIPTOR POOL", vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool));
+#else
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool);
+#endif
 }
 
 void Adren::Descriptor::fillWrites(std::array<VkWriteDescriptorSet, 4>& write, int index, VkDescriptorSet& dSet, int binding, VkDescriptorType type, size_t& count) {
@@ -82,10 +95,10 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
     allocInfo.pNext = &setCounts;
 
     sets.resize(setCount);
-    Adren::Tools::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, sets.data()));
+    Adren::Debugger::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, sets.data()));
 
     VkSamplerCreateInfo sampInfo = Adren::Info::samplerInfo();
-    Adren::Tools::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));
+    Adren::Debugger::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));
 
     VkDescriptorImageInfo samplerInfo{};
     samplerInfo.sampler = sampler;

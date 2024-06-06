@@ -51,11 +51,9 @@ void Adren::Engine::loop() {
         renderer.gui.viewport(camera);
 
         renderer.render(camera);
-        
     }
 
     renderer.wait();
-
 }
 
 void Adren::Engine::run() {

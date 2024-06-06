@@ -18,32 +18,6 @@
 #include <regex>
 
 namespace Adren::Tools {
-inline void vibeCheck(std::string name, VkResult x) {
-    if (x != VK_SUCCESS) {
-        std::cout << "VULKAN ERROR FOR " << name << ": " << x << "\n \n" << std::endl;
-        abort();
-    } 
-}
-
-inline void log(std::string log) {
-    std::cerr << log << "\n \n" << std::endl;
-}
-
-inline void checkSize(std::string log, size_t size) {
-    std::cerr << log << size << "\n \n" << std::endl;
-}
-
-#ifdef DEBUG
-inline void label(VkInstance& instance, VkDevice& device, VkObjectType type, uint64_t handle, const char *name) {
-    VkDebugUtilsObjectNameInfoEXT info{};
-    info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-    info.objectType = type;
-    info.objectHandle = handle;
-    info.pObjectName = name;
-    auto func = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
-    func(device, &info);
-}
-#endif
 
 inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR& surface) {
     QueueFamilyIndices indices;

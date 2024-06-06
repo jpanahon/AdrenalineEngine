@@ -7,6 +7,10 @@
 #include "pipeline.h"
 #include "info.h"
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 std::vector<uint32_t> Adren::Pipeline::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -33,7 +37,11 @@ VkShaderModule Adren::Pipeline::createShaderModule(const std::vector<uint32_t>& 
 
     VkShaderModule shaderModule;
 
-    Adren::Tools::vibeCheck("SHADER MODULE", vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("SHADER MODULE", vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
+#else
+    vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
+#endif
 
     return shaderModule;
 }
@@ -106,7 +114,11 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-    Tools::vibeCheck("PIPELINE LAYOUT", vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout));
+#ifdef ADREN_DEBUG
+    Debugger::vibeCheck("PIPELINE LAYOUT", vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout));
+#else
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout);
+#endif
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -125,7 +137,11 @@ void Adren::Pipeline::create(Swapchain& swapchain, VkDescriptorSetLayout& dLayou
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    Tools::vibeCheck("PIPELINE", vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle));
+#ifdef ADREN_DEBUG
+    Debugger::vibeCheck("PIPELINE", vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle));
+#else
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
+#endif
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

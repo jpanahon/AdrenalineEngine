@@ -10,6 +10,10 @@
 #include "tools.h"
 #include <cstring>
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 bool Adren::Devices::checkDeviceExtensionSupport(VkPhysicalDevice& device) {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -29,7 +33,7 @@ bool Adren::Devices::checkDeviceExtensionSupport(VkPhysicalDevice& device) {
 bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice& card, VkSurfaceKHR& surface) {
     QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(card, surface);
     
-    bool extensionsSupported = checkDeviceExtensionSupport(card);
+    const bool extensionsSupported = checkDeviceExtensionSupport(card);
     
     bool swapChainAdequate = false;
     if (extensionsSupported) {
@@ -72,7 +76,7 @@ void Adren::Devices::createLogicalDevice() {
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
     VkDeviceQueueCreateInfo queueCreateInfo = Adren::Info::deviceQueueCreateInfo();
-    float queuePriority = 1.0f;
+    const float queuePriority = 1.0f;
 
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -103,7 +107,7 @@ void Adren::Devices::createLogicalDevice() {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-#ifdef DEBUG
+#ifdef ADREN_DEBUG
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
 #else
@@ -111,8 +115,12 @@ void Adren::Devices::createLogicalDevice() {
 #endif
     createInfo.pNext = &descriptorIndexing;
     
-    Adren::Tools::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(gpu, &createInfo, nullptr, &device));
-    
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("PHYSICAL DEVICE", vkCreateDevice(gpu, &createInfo, nullptr, &device));
+#else
+    vkCreateDevice(gpu, &createInfo, nullptr, &device);
+#endif
+
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
@@ -124,14 +132,14 @@ std::vector<const char*> Adren::Devices::getRequiredExtensions() {
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     
-#ifdef DEBUG
+#ifdef ADREN_DEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
     return extensions;
 }
 
-#ifdef DEBUG
+#ifdef ADREN_DEBUG
 bool Adren::Devices::checkDebugSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);

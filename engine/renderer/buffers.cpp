@@ -7,6 +7,10 @@
 
 #include "buffers.h"
 
+#ifdef ADREN_DEBUG
+#include "debugger.h"
+#endif
+
 void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -48,9 +52,9 @@ void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPo
 
     vmaDestroyBuffer(allocator, iStaging.buffer, iStaging.memory);
 
-#ifdef DEBUG
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertex.buffer, "VERTEX BUFFER");
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)index.buffer, "INDEX BUFFER");
+#ifdef ADREN_DEBUG
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertex.buffer, "VERTEX BUFFER");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)index.buffer, "INDEX BUFFER");
 #endif
 }
 
@@ -84,6 +88,7 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
     vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
     VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
     dynamicUniform.align = sizeof(glm::mat4);
+
     if (minUboAlignment > 0) {
         dynamicUniform.align = (dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
@@ -94,18 +99,24 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
         modelSize += model->modelSize;
     }
 
-    Adren::Tools::checkSize("Model Size: ", modelSize);
-    
-    dynamicUniform.size = dynamicUniform.align * modelSize;
+#ifdef ADREN_DEBUG
+    std::cerr << "-> Model Count: " << modelSize << std::endl;
+#endif
+
+    dynamicUniform.size = modelSize * dynamicUniform.align;
     uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(dynamicUniform.size, dynamicUniform.align);
     assert(uboData.model);
 
+#ifdef ADREN_DEBUG
+    std::cout << "minUniformBufferOffsetAlignment = " << minUboAlignment << std::endl;
+    std::cout << "dynamicAlignment = " << dynamicUniform.align << std::endl;
+#endif
     createBuffer(allocator, dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform, VMA_MEMORY_USAGE_AUTO);
     vmaMapMemory(allocator, dynamicUniform.memory, &dynamicUniform.mapped);
     memcpy(dynamicUniform.mapped, uboData.model, dynamicUniform.size);
 
-#ifdef DEBUG
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)dynamicUniform.buffer, "DYNAMIC UNIFORM");
+#ifdef ADREN_DEBUG
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)dynamicUniform.buffer, "DYNAMIC UNIFORM");
 #endif
 }
 
@@ -115,9 +126,11 @@ void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     for (Model* model : models) {
         matrices.insert(matrices.end(), model->matrices.begin(), model->matrices.end());
     }
-    
-    Adren::Tools::checkSize("Matrices: ", matrices.size());
-    
+
+#ifdef ADREN_DEBUG
+    std::cerr << "-> Model Matrices: " << matrices.size() << std::endl;
+#endif
+
     VkDeviceSize alignment = dynamicUniform.align * matrices.size();
     memcpy(dynamicUniform.mapped, matrices.data(), alignment);
     vmaFlushAllocation(allocator, dynamicUniform.memory, alignment, sizeof(glm::mat4));

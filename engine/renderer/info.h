@@ -20,7 +20,7 @@ namespace Adren::Info {
 inline VkApplicationInfo appInfo() {
     std::string appName = "Adrenaline Engine";
 
-    VkApplicationInfo info {
+    return VkApplicationInfo {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = appName.c_str(),
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
@@ -28,8 +28,6 @@ inline VkApplicationInfo appInfo() {
         .engineVersion = VK_API_VERSION_1_2,
         .apiVersion = VK_API_VERSION_1_2
     };
-
-    return info;
 }
 
 inline VkDeviceQueueCreateInfo deviceQueueCreateInfo() {

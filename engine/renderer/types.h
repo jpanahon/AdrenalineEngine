@@ -103,7 +103,7 @@ struct Frame {
 };
 
 struct Offset {
-    uint32_t index = 0;
+    int32_t index = 0;
     uint32_t vertex = 0;
     uint32_t texture = 0;
     uint32_t dynamic = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 - 2023 spnda
+ * Copyright (C) 2022 - 2024 spnda
  * This file is part of fastgltf <https://github.com/spnda/fastgltf>.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -29,7 +29,7 @@
 #include <memory>
 #include <tuple>
 
-#include "types.hpp"
+#include <fastgltf/types.hpp>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -86,6 +86,8 @@ namespace fastgltf {
 		MissingExternalBuffer = 9, ///< With Options::LoadExternalBuffers, an external buffer was not found.
 		UnsupportedVersion = 10, ///< The glTF version is not supported by fastgltf.
 		InvalidURI = 11, ///< A URI from a buffer or image failed to be parsed.
+		InvalidFileData = 12, ///< The file data is invalid, or the file type could not be determined.
+		FailedWritingFiles = 13, ///< The exporter failed to write some files (buffers/images) to disk.
     };
 
 	inline std::string_view getErrorName(Error error) {
@@ -102,6 +104,9 @@ namespace fastgltf {
 			case Error::MissingExternalBuffer: return "MissingExternalBuffer";
 			case Error::UnsupportedVersion: return "UnsupportedVersion";
 			case Error::InvalidURI: return "InvalidURI";
+            case Error::InvalidFileData: return "InvalidFileData";
+            case Error::FailedWritingFiles: return "FailedWritingFiles";
+			default: FASTGLTF_UNREACHABLE
 		}
 	}
 
@@ -119,6 +124,9 @@ namespace fastgltf {
 			case Error::MissingExternalBuffer: return "An external buffer was not found.";
 			case Error::UnsupportedVersion: return "The glTF version is not supported by fastgltf.";
 			case Error::InvalidURI: return "A URI from a buffer or image failed to be parsed.";
+            case Error::InvalidFileData: return "The file data is invalid, or the file type could not be determined.";
+            case Error::FailedWritingFiles: return "The exporter failed to write some files (buffers/images) to disk.";
+			default: FASTGLTF_UNREACHABLE
 		}
 	}
 
@@ -184,14 +192,32 @@ namespace fastgltf {
         // See https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Archived/KHR_materials_pbrSpecularGlossiness/README.md
         KHR_materials_pbrSpecularGlossiness = 1 << 20,
 #endif
+
+		// See https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Vendor/MSFT_packing_normalRoughnessMetallic/README.md
+		MSFT_packing_normalRoughnessMetallic = 1 << 21,
+
+		// See https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Vendor/MSFT_packing_occlusionRoughnessMetallic/README.md
+		MSFT_packing_occlusionRoughnessMetallic = 1 << 22,
+
+		// See https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_dispersion
+		KHR_materials_dispersion = 1 << 23,
+
+		// See https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_variants
+		KHR_materials_variants = 1 << 24,
     };
     // clang-format on
 
     FASTGLTF_ARITHMETIC_OP_TEMPLATE_MACRO(Extensions, Extensions, |)
     FASTGLTF_ARITHMETIC_OP_TEMPLATE_MACRO(Extensions, Extensions, &)
+	FASTGLTF_ARITHMETIC_OP_TEMPLATE_MACRO(Extensions, Extensions, -)
     FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(Extensions, Extensions, |)
     FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(Extensions, Extensions, &)
     FASTGLTF_UNARY_OP_TEMPLATE_MACRO(Extensions, ~)
+
+	constexpr Extensions operator-(const Extensions& a, const std::underlying_type_t<Extensions>& b) noexcept {
+		static_assert(std::is_enum_v<Extensions>);
+		return static_cast<Extensions>(to_underlying(a) - b);
+	}
 
     // clang-format off
     enum class Options : std::uint64_t {
@@ -248,6 +274,27 @@ namespace fastgltf {
          * to LoadExternalBuffers.
          */
         LoadExternalImages              = 1 << 7,
+
+		/**
+		 * Lets fastgltf generate indices for all mesh primitives without indices. This currently
+		 * does not de-duplicate the vertices. This is entirely for compatibility and simplifying the
+		 * loading process.
+		 */
+		GenerateMeshIndices             = 1 << 8,
+    };
+
+    enum class ExportOptions : std::uint64_t {
+        None                            = 0,
+
+        /**
+         * Calls fastgltf::validate for the passed asset before writing.
+         */
+        ValidateAsset                   = 1 << 1,
+
+        /**
+         * Pretty-prints the outputted JSON. This option is ignored for binary glTFs.
+         */
+        PrettyPrintJson                 = 1 << 2,
     };
     // clang-format on
 
@@ -256,6 +303,11 @@ namespace fastgltf {
     FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(Options, Options, |)
     FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(Options, Options, &)
     FASTGLTF_UNARY_OP_TEMPLATE_MACRO(Options, ~)
+    FASTGLTF_ARITHMETIC_OP_TEMPLATE_MACRO(ExportOptions, ExportOptions, |)
+    FASTGLTF_ARITHMETIC_OP_TEMPLATE_MACRO(ExportOptions, ExportOptions, &)
+    FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(ExportOptions, ExportOptions, |)
+    FASTGLTF_ASSIGNMENT_OP_TEMPLATE_MACRO(ExportOptions, ExportOptions, &)
+    FASTGLTF_UNARY_OP_TEMPLATE_MACRO(ExportOptions, ~)
 
     // String representations of glTF 2.0 extension identifiers.
     namespace extensions {
@@ -265,6 +317,7 @@ namespace fastgltf {
         constexpr std::string_view KHR_lights_punctual = "KHR_lights_punctual";
 		constexpr std::string_view KHR_materials_anisotropy = "KHR_materials_anisotropy";
         constexpr std::string_view KHR_materials_clearcoat = "KHR_materials_clearcoat";
+		constexpr std::string_view KHR_materials_dispersion = "KHR_materials_dispersion";
         constexpr std::string_view KHR_materials_emissive_strength = "KHR_materials_emissive_strength";
         constexpr std::string_view KHR_materials_ior = "KHR_materials_ior";
         constexpr std::string_view KHR_materials_iridescence = "KHR_materials_iridescence";
@@ -272,10 +325,13 @@ namespace fastgltf {
         constexpr std::string_view KHR_materials_specular = "KHR_materials_specular";
         constexpr std::string_view KHR_materials_transmission = "KHR_materials_transmission";
         constexpr std::string_view KHR_materials_unlit = "KHR_materials_unlit";
+		constexpr std::string_view KHR_materials_variants = "KHR_materials_variants";
         constexpr std::string_view KHR_materials_volume = "KHR_materials_volume";
         constexpr std::string_view KHR_mesh_quantization = "KHR_mesh_quantization";
         constexpr std::string_view KHR_texture_basisu = "KHR_texture_basisu";
         constexpr std::string_view KHR_texture_transform = "KHR_texture_transform";
+	    constexpr std::string_view MSFT_packing_normalRoughnessMetallic = "MSFT_packing_normalRoughnessMetallic";
+	    constexpr std::string_view MSFT_packing_occlusionRoughnessMetallic = "MSFT_packing_occlusionRoughnessMetallic";
         constexpr std::string_view MSFT_texture_dds = "MSFT_texture_dds";
 
 #if FASTGLTF_ENABLE_DEPRECATED_EXT
@@ -288,29 +344,33 @@ namespace fastgltf {
 	// value used for enabling/disabling the loading of it. This also represents all extensions that
 	// fastgltf supports and understands.
 #if FASTGLTF_ENABLE_DEPRECATED_EXT
-	static constexpr size_t SUPPORTED_EXTENSION_COUNT = 19;
+	static constexpr std::size_t SUPPORTED_EXTENSION_COUNT = 23;
 #else
-	static constexpr size_t SUPPORTED_EXTENSION_COUNT = 18;
+	static constexpr std::size_t SUPPORTED_EXTENSION_COUNT = 22;
 #endif
 	static constexpr std::array<std::pair<std::string_view, Extensions>, SUPPORTED_EXTENSION_COUNT> extensionStrings = {{
-		{ extensions::EXT_mesh_gpu_instancing,            Extensions::EXT_mesh_gpu_instancing },
-		{ extensions::EXT_meshopt_compression,            Extensions::EXT_meshopt_compression },
-		{ extensions::EXT_texture_webp,                   Extensions::EXT_texture_webp },
-		{ extensions::KHR_lights_punctual,                Extensions::KHR_lights_punctual },
-		{ extensions::KHR_materials_anisotropy,           Extensions::KHR_materials_anisotropy },
-		{ extensions::KHR_materials_clearcoat,            Extensions::KHR_materials_clearcoat },
-		{ extensions::KHR_materials_emissive_strength,    Extensions::KHR_materials_emissive_strength },
-		{ extensions::KHR_materials_ior,                  Extensions::KHR_materials_ior },
-		{ extensions::KHR_materials_iridescence,          Extensions::KHR_materials_iridescence },
-		{ extensions::KHR_materials_sheen,                Extensions::KHR_materials_sheen },
-		{ extensions::KHR_materials_specular,             Extensions::KHR_materials_specular },
-		{ extensions::KHR_materials_transmission,         Extensions::KHR_materials_transmission },
-		{ extensions::KHR_materials_unlit,                Extensions::KHR_materials_unlit },
-		{ extensions::KHR_materials_volume,               Extensions::KHR_materials_volume },
-		{ extensions::KHR_mesh_quantization,              Extensions::KHR_mesh_quantization },
-		{ extensions::KHR_texture_basisu,                 Extensions::KHR_texture_basisu },
-		{ extensions::KHR_texture_transform,              Extensions::KHR_texture_transform },
-		{ extensions::MSFT_texture_dds,                   Extensions::MSFT_texture_dds },
+		{ extensions::EXT_mesh_gpu_instancing,                  Extensions::EXT_mesh_gpu_instancing },
+		{ extensions::EXT_meshopt_compression,                  Extensions::EXT_meshopt_compression },
+		{ extensions::EXT_texture_webp,                         Extensions::EXT_texture_webp },
+		{ extensions::KHR_lights_punctual,                      Extensions::KHR_lights_punctual },
+		{ extensions::KHR_materials_anisotropy,                 Extensions::KHR_materials_anisotropy },
+		{ extensions::KHR_materials_clearcoat,                  Extensions::KHR_materials_clearcoat },
+		{ extensions::KHR_materials_dispersion,                 Extensions::KHR_materials_dispersion },
+		{ extensions::KHR_materials_emissive_strength,          Extensions::KHR_materials_emissive_strength },
+		{ extensions::KHR_materials_ior,                        Extensions::KHR_materials_ior },
+		{ extensions::KHR_materials_iridescence,                Extensions::KHR_materials_iridescence },
+		{ extensions::KHR_materials_sheen,                      Extensions::KHR_materials_sheen },
+		{ extensions::KHR_materials_specular,                   Extensions::KHR_materials_specular },
+		{ extensions::KHR_materials_transmission,               Extensions::KHR_materials_transmission },
+		{ extensions::KHR_materials_unlit,                      Extensions::KHR_materials_unlit },
+		{ extensions::KHR_materials_variants,                   Extensions::KHR_materials_variants },
+		{ extensions::KHR_materials_volume,                     Extensions::KHR_materials_volume },
+		{ extensions::KHR_mesh_quantization,                    Extensions::KHR_mesh_quantization },
+		{ extensions::KHR_texture_basisu,                       Extensions::KHR_texture_basisu },
+		{ extensions::KHR_texture_transform,                    Extensions::KHR_texture_transform },
+		{ extensions::MSFT_packing_normalRoughnessMetallic,     Extensions::MSFT_packing_normalRoughnessMetallic },
+		{ extensions::MSFT_packing_occlusionRoughnessMetallic,  Extensions::MSFT_packing_occlusionRoughnessMetallic },
+		{ extensions::MSFT_texture_dds,                         Extensions::MSFT_texture_dds },
 
 #if FASTGLTF_ENABLE_DEPRECATED_EXT
 		{ extensions::KHR_materials_pbrSpecularGlossiness,Extensions::KHR_materials_pbrSpecularGlossiness },
@@ -330,22 +390,38 @@ namespace fastgltf {
 	inline
 #endif
 	std::string_view stringifyExtension(Extensions extensions) {
-		// Find the first set bit and mask the value to that
-		std::uint8_t position = 0;
-		while (position < std::numeric_limits<std::underlying_type_t<Extensions>>::digits) {
-			if (((to_underlying(extensions) >> position) & 1) != 0) {
-				extensions &= static_cast<Extensions>(1 << position);
-				break;
-			}
-			++position;
-		}
+		// Remove everything but the rightmost bit
+		extensions = extensions - (extensions & (extensions - 1));
 
-		for (const auto& extensionString : extensionStrings)
-			if (extensionString.second == extensions)
-				return extensionString.first;
+		for (const auto& [string, value] : extensionStrings)
+			if (value == extensions)
+				return string;
 		return "";
 	}
 
+	/**
+	 * Returns a list of extension names based on the given extension flags.
+	 */
+	inline auto stringifyExtensionBits(Extensions extensions) -> decltype(Asset::extensionsRequired) {
+		decltype(Asset::extensionsRequired) stringified;
+		for (std::uint8_t i = 0; i < std::numeric_limits<std::underlying_type_t<Extensions>>::digits; ++i) {
+			// The 1 has to be cast to the underlying type as uint8_t(1) << 9 will overflow and be effectively the same as uint8_t(1).
+			auto curExtension = static_cast<Extensions>(std::underlying_type_t<Extensions>(1) << i);
+			if ((extensions & curExtension) == Extensions::None)
+				continue;
+
+			// Find the stringified extension name
+			for (const auto& [name, ext] : extensionStrings) {
+				if (ext == curExtension) {
+					stringified.emplace_back(name);
+					break;
+				}
+			}
+		}
+		return stringified;
+	}
+
+#if !FASTGLTF_DISABLE_CUSTOM_MEMORY_POOL
 	class ChunkMemoryResource : public std::pmr::memory_resource {
 		/**
 		 * The default size of the individual blocks we allocate.
@@ -375,7 +451,7 @@ namespace fastgltf {
 
 		[[nodiscard]] void* do_allocate(std::size_t bytes, std::size_t alignment) override {
 			auto& block = blocks[blockIdx];
-			auto availableSize = block.dataPointer - block.data.get();
+			auto availableSize = static_cast<std::size_t>(block.dataPointer - block.data.get());
 			if ((availableSize + bytes) > block.size) {
 				// The block can't fit the new allocation. We'll just create a new block and use that.
 				allocateNewBlock();
@@ -406,6 +482,7 @@ namespace fastgltf {
 			return this == std::addressof(other);
 		}
 	};
+#endif
 
 	/**
 	 * A type that stores an error together with an expected value.
@@ -488,7 +565,7 @@ namespace fastgltf {
 		}
 
 		T&& operator*() && noexcept {
-			assert(err = Error::None);
+			assert(err == Error::None);
 			return std::move(value);
 		}
 
@@ -505,6 +582,8 @@ namespace fastgltf {
     using BufferMapCallback = BufferInfo(std::uint64_t bufferSize, void* userPointer);
     using BufferUnmapCallback = void(BufferInfo* bufferInfo, void* userPointer);
     using Base64DecodeCallback = void(std::string_view base64, std::uint8_t* dataOutput, std::size_t padding, std::size_t dataOutputSize, void* userPointer);
+	using ExtrasParseCallback = void(simdjson::dom::object* extras, std::size_t objectIndex, Category objectType, void* userPointer);
+	using ExtrasWriteCallback = std::optional<std::string>(std::size_t objectIndex, Category objectType, void* userPointer);
 
     /**
      * Enum to represent the type of a glTF file. glTFs can either be the standard JSON file with
@@ -512,7 +591,7 @@ namespace fastgltf {
      * container format which has two or more chunks of binary data, where one represents buffers
      * and the other contains the JSON string.
      */
-    enum class GltfType {
+    enum class GltfType : std::uint8_t {
         glTF,
         GLB,
         Invalid,
@@ -520,7 +599,9 @@ namespace fastgltf {
 
 	/**
 	 * This function starts reading into the buffer and tries to determine what type of glTF container it is.
-	 * This should be used to know whether to call Parser::loadGLTF or Parser::loadBinaryGLTF.
+	 * This should be used to know whether to call Parser::loadGltfJson or Parser::loadGltfBinary.
+	 *
+	 * @note Usually, you'll want to just use Parser::loadGltf, which will call this itself.
 	 *
 	 * @return The type of the glTF file, either glTF, GLB, or Invalid if it was not determinable. If this function
 	 * returns Invalid it is highly likely that the buffer does not actually represent a valid glTF file.
@@ -562,13 +643,10 @@ namespace fastgltf {
         virtual ~GltfDataBuffer() noexcept;
 
         /**
-         * Saves the pointer including its range. Does not copy any data. This requires the
-         * original allocation to outlive the parsing of the glTF, so after the last relevant
-         * call to fastgltf::Parser::loadGLTF. However, this function asks for a capacity size, as
-         * the JSON parsing requires some padding. See fastgltf::getGltfBufferPadding for more information.
-         * If the capacity does not have enough padding, the function will instead copy the bytes
-         * with the copyBytes method. Also, it will set the padding bytes all to 0, so be sure to
-         * not use that for any other data.
+         * Saves the given pointer including the given range.
+         * If the capacity of the allocation minus the used size is smaller than fastgltf::getGltfBufferPadding,
+         * this function will re-allocate and copy the bytes.
+         * Also, it will set the padding bytes all to 0, so be sure to not use that for any other data.
          */
         bool fromByteView(std::uint8_t* bytes, std::size_t byteCount, std::size_t capacity) noexcept;
 
@@ -586,7 +664,9 @@ namespace fastgltf {
          * Returns the size, in bytes,
          * @return
          */
-        [[nodiscard]] inline std::size_t getBufferSize() const noexcept;
+        [[nodiscard]] std::size_t getBufferSize() const noexcept {
+			return dataSize;
+		}
 
         [[nodiscard]] explicit operator span<std::byte>() {
             return span<std::byte>(bufferPointer, dataSize);
@@ -622,6 +702,7 @@ namespace fastgltf {
         BufferMapCallback* mapCallback = nullptr;
         BufferUnmapCallback* unmapCallback = nullptr;
         Base64DecodeCallback* decodeCallback = nullptr;
+		ExtrasParseCallback* extrasCallback = nullptr;
 
         void* userPointer = nullptr;
         Extensions extensions = Extensions::None;
@@ -640,15 +721,19 @@ namespace fastgltf {
 
 		ParserInternalConfig config = {};
 		DataSource glbBuffer;
+#if !FASTGLTF_DISABLE_CUSTOM_MEMORY_POOL
 		std::shared_ptr<ChunkMemoryResource> resourceAllocator;
+#endif
 		std::filesystem::path directory;
-		Options options;
+		Options options = Options::None;
 
 		static auto getMimeTypeFromString(std::string_view mime) -> MimeType;
 		static void fillCategories(Category& inputCategories) noexcept;
 
 		[[nodiscard]] auto decodeDataUri(URIView& uri) const noexcept -> Expected<DataSource>;
 		[[nodiscard]] auto loadFileFromUri(URIView& uri) const noexcept -> Expected<DataSource>;
+
+		Error generateMeshIndices(Asset& asset) const;
 
 		Error parseAccessors(simdjson::dom::array& array, Asset& asset);
 		Error parseAnimations(simdjson::dom::array& array, Asset& asset);
@@ -658,6 +743,7 @@ namespace fastgltf {
 		Error parseExtensions(simdjson::dom::object& extensionsObject, Asset& asset);
 		Error parseImages(simdjson::dom::array& array, Asset& asset);
 		Error parseLights(simdjson::dom::array& array, Asset& asset);
+		Error parseMaterialExtensions(simdjson::dom::object& object, Material& material);
 		Error parseMaterials(simdjson::dom::array& array, Asset& asset);
 		Error parseMeshes(simdjson::dom::array& array, Asset& asset);
 		Error parseNodes(simdjson::dom::array& array, Asset& asset);
@@ -677,18 +763,27 @@ namespace fastgltf {
         ~Parser();
 
         /**
+         * Loads a glTF file from pre-loaded bytes.
+         *
+         * This function tries to detect wether the bytes represent a standard JSON glTF or a binary glTF.
+         *
+         * @return An Asset wrapped in an Expected type, which may contain an error if one occurred.
+         */
+        [[nodiscard]] Expected<Asset> loadGltf(GltfDataBuffer* buffer, std::filesystem::path directory, Options options = Options::None, Category categories = Category::All);
+
+        /**
          * Loads a glTF file from pre-loaded bytes representing a JSON file.
          *
          * @return An Asset wrapped in an Expected type, which may contain an error if one occurred.
          */
-        [[nodiscard]] Expected<Asset> loadGLTF(GltfDataBuffer* buffer, std::filesystem::path directory, Options options = Options::None, Category categories = Category::All);
+        [[nodiscard]] Expected<Asset> loadGltfJson(GltfDataBuffer* buffer, std::filesystem::path directory, Options options = Options::None, Category categories = Category::All);
 
 		/**
 		 * Loads a glTF file embedded within a GLB container, which may contain the first buffer of the glTF asset.
 		 *
          * @return An Asset wrapped in an Expected type, which may contain an error if one occurred.
 		 */
-		[[nodiscard]] Expected<Asset> loadBinaryGLTF(GltfDataBuffer* buffer, std::filesystem::path directory, Options options = Options::None, Category categories = Category::All);
+		[[nodiscard]] Expected<Asset> loadGltfBinary(GltfDataBuffer* buffer, std::filesystem::path directory, Options options = Options::None, Category categories = Category::All);
 
         /**
          * This function can be used to set callbacks so that you can control memory allocation for
@@ -719,8 +814,133 @@ namespace fastgltf {
          * @param decodeCallback function called when the parser tries to decode a base64 buffer
          */
         void setBase64DecodeCallback(Base64DecodeCallback* decodeCallback) noexcept;
+
+		void setExtrasParseCallback(ExtrasParseCallback* extrasCallback) noexcept;
+
         void setUserPointer(void* pointer) noexcept;
     };
+
+    /**
+     * This converts a compacted JSON string into a more readable pretty format.
+     */
+    void prettyPrintJson(std::string& json);
+
+    /**
+     * Escapes a string for use in JSON.
+     */
+    std::string escapeString(std::string_view string);
+
+    template <typename T>
+    struct ExportResult {
+        T output;
+
+        std::vector<std::optional<std::filesystem::path>> bufferPaths;
+        std::vector<std::optional<std::filesystem::path>> imagePaths;
+    };
+
+    /**
+     * A exporter for serializing one or more glTF assets into JSON and GLB forms.
+     *
+     * @note This does not write anything to any files. This class only serializes data
+     * into memory structures, which can then be used to manually write them to disk.
+     * If you want to let fastgltf handle the file writing too, use fastgltf::FileExporter.
+     */
+    class Exporter {
+    protected:
+        Error errorCode = Error::None;
+        ExportOptions options = ExportOptions::None;
+		bool exportingBinary = false;
+
+        std::filesystem::path bufferFolder = "";
+        std::filesystem::path imageFolder = "";
+
+		void* userPointer = nullptr;
+		ExtrasWriteCallback* extrasWriteCallback = nullptr;
+
+        std::vector<std::optional<std::filesystem::path>> bufferPaths;
+        std::vector<std::optional<std::filesystem::path>> imagePaths;
+
+        void writeAccessors(const Asset& asset, std::string& json);
+        void writeBuffers(const Asset& asset, std::string& json);
+        void writeBufferViews(const Asset& asset, std::string& json);
+        void writeCameras(const Asset& asset, std::string& json);
+        void writeImages(const Asset& asset, std::string& json);
+        void writeLights(const Asset& asset, std::string& json);
+        void writeMaterials(const Asset& asset, std::string& json);
+        void writeMeshes(const Asset& asset, std::string& json);
+        void writeNodes(const Asset& asset, std::string& json);
+        void writeSamplers(const Asset& asset, std::string& json);
+        void writeScenes(const Asset& asset, std::string& json);
+        void writeSkins(const Asset& asset, std::string& json);
+        void writeTextures(const Asset& asset, std::string& json);
+        void writeExtensions(const Asset& asset, std::string& json);
+
+        std::filesystem::path getBufferFilePath(const Asset& asset, std::size_t index);
+        std::filesystem::path getImageFilePath(const Asset& asset, std::size_t index, MimeType mimeType);
+
+        std::string writeJson(const Asset& asset);
+
+    public:
+        /**
+         * Sets the relative base path for buffer URIs.
+         *
+         * If folder.is_relative() returns false, this has no effect.
+         */
+        void setBufferPath(std::filesystem::path folder);
+        /**
+         * Sets the relative base path for image URIs.
+         *
+         * If folder.is_relative() returns false, this has no effect.
+         */
+        void setImagePath(std::filesystem::path folder);
+
+		void setExtrasWriteCallback(ExtrasWriteCallback* callback) noexcept;
+
+		void setUserPointer(void* pointer) noexcept;
+
+        /**
+         * Generates a glTF JSON string from the given asset.
+         */
+        Expected<ExportResult<std::string>> writeGltfJson(const Asset& asset, ExportOptions options = ExportOptions::None);
+
+        /**
+         * Generates a glTF binary (GLB) blob from the given asset.
+         *
+         * If the first buffer holds a sources::Vector, a sources::Array, a or sources::ByteView and the byte length is smaller than 2^32 (4.2GB),
+         * it will be embedded into the binary. Note that the returned vector might therefore get quite large.
+         */
+        Expected<ExportResult<std::vector<std::byte>>> writeGltfBinary(const Asset& asset, ExportOptions options = ExportOptions::None);
+    };
+
+	/**
+	 * A exporter for serializing one or more glTF files into JSON and GLB forms.
+	 * This exporter builds upon Exporter by writing all files automatically to the
+	 * given paths.
+	 */
+	class FileExporter : public Exporter {
+        using Exporter::writeGltfJson;
+        using Exporter::writeGltfBinary;
+
+	public:
+        /**
+         * Writes a glTF JSON string generated from the given asset to the specified target file. This will also write
+         * all buffers and textures to disk using the buffer and image paths set using Exporter::setBufferPath and
+         * Exporter::setImagePath.
+         */
+		Error writeGltfJson(const Asset& asset, std::filesystem::path target, ExportOptions options = ExportOptions::None);
+
+		/**
+		 * Writes a glTF binary (GLB) blob from the given asset to the specified target file. This will also write
+         * all buffers and textures to disk using the buffer and image paths set using Exporter::setBufferPath and
+         * Exporter::setImagePath.
+         *
+		 * If the first buffer holds a sources::Vector, a sources::Array, a or sources::ByteView and the byte length is smaller than 2^32 (4.2GB),
+         * it will be embedded into the binary.
+         *
+		 * \see Exporter::writeGltfBinary
+		 */
+        Error writeGltfBinary(const Asset& asset, std::filesystem::path target, ExportOptions options = ExportOptions::None);
+	};
 } // namespace fastgltf
 
 #ifdef _MSC_VER

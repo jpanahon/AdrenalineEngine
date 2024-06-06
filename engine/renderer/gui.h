@@ -29,6 +29,7 @@ public:
     void viewport(Camera& camera);
     void beginRenderpass(Camera& camera, VkCommandBuffer& buffer, VkPipeline& pipeline, Buffer& vertex, Buffer& index);
     void draw(VkCommandBuffer& commandBuffer);
+
     struct Base {
         VkRenderPass renderpass;
         VkCommandPool commandPool;
@@ -59,8 +60,6 @@ private:
     VkPhysicalDevice& gpu;
     VmaAllocator& allocator;
 
-    bool rightClick = false;
-
-    bool modelInfoLoaded = false;
+    bool cameraDisabled = false;
 };
 }

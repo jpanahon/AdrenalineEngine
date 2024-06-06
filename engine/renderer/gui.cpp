@@ -12,6 +12,10 @@
 #include "info.h"
 #include <glm/gtc/type_ptr.hpp>
 
+#ifdef ADREN_DEBUG 
+#include "debugger.h"
+#endif
+
 void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface) {
     VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -34,7 +38,7 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
 
-    Adren::Tools::vibeCheck("IMGUI DESCRIPTOR POOL", vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool));
+    Adren::Debugger::vibeCheck("IMGUI DESCRIPTOR POOL", vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool));
 
     IMGUI_CHECKVERSION();
     ctx = ImGui::CreateContext();
@@ -116,12 +120,12 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
 
     base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
  
-#ifdef DEBUG
-        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)base.commandPool, "IMGUI COMMAND POOL");
-        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)base.framebuffer, "IMGUI FRAMEBUFFER");
-        Adren::Tools::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)base.renderpass, "IMGUI RENDER PASS");
+#ifdef ADREN_DEBUG
+        Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)base.commandPool, "IMGUI COMMAND POOL");
+        Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)base.framebuffer, "IMGUI FRAMEBUFFER");
+        Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)base.renderpass, "IMGUI RENDER PASS");
+        Adren::Debugger::log("ImGui has been initialized..");
 #endif
-    Adren::Tools::log("ImGui has been initialized..");
 }
 
 void Adren::GUI::cleanup() {
@@ -140,22 +144,20 @@ void Adren::GUI::cleanup() {
 void Adren::GUI::mouseHandler(GLFWwindow* window, Camera& camera) {
     ImGuiIO& io = ImGui::GetIO();
 
-    if (io.WantCaptureMouse && rightClick == true) camera.disable();
+    bool rightClicked = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    bool cameraMode = glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS;
 
-    if (rightClick) { camera.disable(); } else { camera.enable(); }
-
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && rightClick == false) {
+    if (rightClicked) {
         int centerX = camera.getWidth() / 2;
         int centerY = camera.getHeight() / 2;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetCursorPos(window, centerX, centerY);
-        rightClick = true;
+        camera.disable();
     }
-
-
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && rightClick == true) {
+    
+    if (cameraMode) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        rightClick = false;
+        camera.enable();
     }
 }
 
@@ -193,7 +195,12 @@ void Adren::GUI::createRenderPass(Camera& camera) {
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 1.0f;
     samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    Adren::Tools::vibeCheck("IMGUI SAMPLER", vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler));
+
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("IMGUI SAMPLER", vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler));
+#else
+    vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler);
+#endif
 
     std::array<VkAttachmentDescription, 2> attachments{};
     attachments[0].format = swapchain.imgFormat;
@@ -249,13 +256,17 @@ void Adren::GUI::createRenderPass(Camera& camera) {
     info.dependencyCount = static_cast<uint32_t>(dependencies.size());
     info.pDependencies = dependencies.data();
 
-    Adren::Tools::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &info, nullptr, &base.renderpass));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("RENDER PASS", vkCreateRenderPass(device, &info, nullptr, &base.renderpass));
+#else
+    vkCreateRenderPass(device, &info, nullptr, &base.renderpass);
+#endif
 
-#ifdef DEBUG 
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.color.image, "GUI COLOR IMAGE");
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.depth.image, "GUI DEPTH IMAGE");
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.color.view, "GUI COLOR IMAGE VIEW");
-    Adren::Tools::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.depth.view, "GUI DEPTH IMAGE VIEW");
+#ifdef ADREN_DEBUG 
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.color.image, "GUI COLOR IMAGE");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)base.depth.image, "GUI DEPTH IMAGE");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.color.view, "GUI COLOR IMAGE VIEW");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)base.depth.view, "GUI DEPTH IMAGE VIEW");
 #endif
 }
 
@@ -273,7 +284,11 @@ void Adren::GUI::createFramebuffers(Camera& camera) {
     framebufferInfo.height = camera.getHeight();
     framebufferInfo.layers = 1;
 
-    Adren::Tools::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("IMGUI FRAME BUFFER", vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer));
+#else
+    vkCreateFramebuffer(device, &framebufferInfo, nullptr, &base.framebuffer);
+#endif
 }
 
 void Adren::GUI::createCommands() {
@@ -281,10 +296,15 @@ void Adren::GUI::createCommands() {
     commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     commandPoolInfo.queueFamilyIndex = queueFam.graphicsFamily.value();
     commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    Adren::Tools::vibeCheck("CREATED IMGUI COMMAND POOL", vkCreateCommandPool(device, &commandPoolInfo, nullptr, &base.commandPool));
+
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("CREATED IMGUI COMMAND POOL", vkCreateCommandPool(device, &commandPoolInfo, nullptr, &base.commandPool));
+#else
+    vkCreateCommandPool(device, &commandPoolInfo, nullptr, &base.commandPool);
+#endif
 }
 
-// This function recreates images, renderpassand framebuffer used to display the Vulkan scene to the GUI.
+// This function recreates images, renderpass and framebuffer used to display the Vulkan scene to the GUI.
 // It re-renders the scene in a different display resolution dictated by the viewport function.
 void Adren::GUI::resize(Camera& camera) {
     // Destroying the images because we would have to recreate it in a different size.

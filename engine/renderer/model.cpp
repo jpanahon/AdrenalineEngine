@@ -11,41 +11,62 @@
 #include "model.h"
 #include "tools.h"
 
+#include <fastgltf/core.hpp>
+#include <fastgltf/types.hpp>
+#include <fastgltf/tools.hpp>
+#include <fastgltf/glm_element_traits.hpp>
+
 #include "../adrenaline.h" // This is where STB_IMAGE_IMPLEMENTATION is defined.
 
 Adren::Model::Model(std::string_view modelPath) {
     std::cout << "Loading " << modelPath << std::endl;
 
     {
-        fastgltf::Parser parser(fastgltf::Extensions::KHR_mesh_quantization);
+        static constexpr fastgltf::Extensions supportedExtensions =
+            fastgltf::Extensions::KHR_mesh_quantization |
+            fastgltf::Extensions::KHR_texture_transform |
+            fastgltf::Extensions::KHR_materials_variants |
+            fastgltf::Extensions::KHR_lights_punctual |
+            fastgltf::Extensions::KHR_materials_sheen |
+            fastgltf::Extensions::KHR_materials_emissive_strength |
+            fastgltf::Extensions::KHR_materials_dispersion |
+            fastgltf::Extensions::KHR_materials_specular |
+            fastgltf::Extensions::KHR_texture_basisu |
+            fastgltf::Extensions::KHR_materials_unlit |
+            fastgltf::Extensions::KHR_materials_clearcoat |
+            fastgltf::Extensions::KHR_materials_transmission |
+            fastgltf::Extensions::KHR_materials_volume |
+            fastgltf::Extensions::KHR_materials_ior |
+            fastgltf::Extensions::EXT_mesh_gpu_instancing |
+            fastgltf::Extensions::KHR_materials_iridescence |
+            fastgltf::Extensions::EXT_meshopt_compression;
+
+        fastgltf::Parser parser(supportedExtensions);
 
         auto path = std::filesystem::path{ modelPath };
 
-        constexpr auto options =
+        constexpr fastgltf::Options options =
             fastgltf::Options::DontRequireValidAssetMember |
             fastgltf::Options::AllowDouble |
             fastgltf::Options::LoadGLBBuffers |
             fastgltf::Options::LoadExternalBuffers |
-            fastgltf::Options::LoadExternalImages;
+            fastgltf::Options::LoadExternalImages |
+            fastgltf::Options::GenerateMeshIndices;
 
         fastgltf::GltfDataBuffer data;
         data.loadFromFile(modelPath);
 
-        auto type = fastgltf::determineGltfFileType(&data);
-        fastgltf::Expected<fastgltf::Asset> asset(fastgltf::Error::None);
-
-        if (type == fastgltf::GltfType::glTF) {
-            asset = parser.loadGLTF(&data, path.parent_path(), options);
-        } else if (type == fastgltf::GltfType::GLB) {
-            asset = parser.loadBinaryGLTF(&data, path.parent_path(), options);
-        }
+        auto asset = parser.loadGltf(&data, path.parent_path(), options);
 
         if (asset.error() != fastgltf::Error::None) {
-            Adren::Tools::log("Failed to open gltf file.");
+            std::cerr << "File could not be loaded:\n" << fastgltf::getErrorMessage(asset.error()) << std::endl;
         }
 
         gltfModel = std::move(asset.get());
-        Adren::Tools::log("GLTF Loaded");
+
+#ifdef ADREN_DEBUG
+        Adren::Debugger::log("GLTF Loaded");
+#endif
 
         for (auto& image : gltfModel.images) {
             loadImages(image);
@@ -59,25 +80,24 @@ Adren::Model::Model(std::string_view modelPath) {
             loadMaterials(material);
         }
 
+#ifdef ADREN_DEBUG
+        std::cerr << "-> Meshes Size: " << gltfModel.meshes.size() << std::endl;
+#endif
         for (auto& mesh : gltfModel.meshes) {
             loadMesh(mesh);
         }
 
-        std::size_t sceneIndex = 0;
-
-        if (gltfModel.defaultScene.has_value())
-            sceneIndex = gltfModel.defaultScene.value();
-
-        auto& scene = gltfModel.scenes[sceneIndex];
-        for (auto& node : scene.nodeIndices) {
-            countMeshes(modelSize, node);
-            countMatrices(matrices, node, glm::mat4(1.0f));
+        for (auto& scene : gltfModel.scenes) {
+            for (auto& node : scene.nodeIndices) {
+                countMeshes(modelSize, node);
+                countMatrices(matrices, node, glm::mat4(1.0f));
+            }
         }
     }
 }
 
 void Adren::Model::countMeshes(uint32_t& num, size_t index) {
-    fastgltf::Node node = gltfModel.nodes[index];
+    const fastgltf::Node& node = gltfModel.nodes[index];
     num++;
    
     for (const auto& child : node.children) {
@@ -86,28 +106,32 @@ void Adren::Model::countMeshes(uint32_t& num, size_t index) {
 }
 
 void Adren::Model::countMatrices(std::vector<glm::mat4>& matrices, size_t index, glm::mat4 matrix) {
-    fastgltf::Node node = gltfModel.nodes[index];
-    matrices.push_back(getTransformMatrix(node, matrix));
+    const fastgltf::Node& node = gltfModel.nodes[index];
+    glm::mat4 temp = glm::mat4(1.0f);
+    matrices.push_back(getTransformMatrix(node, temp));
 
     for (const auto& child : node.children) {
-        countMatrices(matrices, child, matrix);
+        countMatrices(matrices, child, glm::mat4(1.0f));
     }
 }
 
+std::vector<Adren::Model::Texture> Adren::Model::getTextures() {
+    return textures;
+}
 
 glm::mat4 Adren::Model::getTransformMatrix(const fastgltf::Node& node, glm::mat4x4& base) {
     if (const auto* pMatrix = std::get_if<fastgltf::Node::TransformMatrix>(&node.transform)) {
         return base * glm::mat4x4(glm::make_mat4x4(pMatrix->data()));
     }
-    else if (const auto* pTransform = std::get_if<fastgltf::Node::TRS>(&node.transform)) {
+
+    if (const auto* pTransform = std::get_if<fastgltf::TRS>(&node.transform)) {
         return base
             * glm::translate(glm::mat4(1.0f), glm::make_vec3(pTransform->translation.data()))
             * glm::toMat4(glm::make_quat(pTransform->rotation.data()))
             * glm::scale(glm::mat4(1.0f), glm::make_vec3(pTransform->scale.data()));
     }
-    else {
-        return base;
-    }
+
+    return base;
 }
 
 bool Adren::Model::loadImages(fastgltf::Image& image) {
@@ -129,7 +153,7 @@ bool Adren::Model::loadImages(fastgltf::Image& image) {
                 .width = width
             };
         },
-        [&](fastgltf::sources::Vector& vector) {
+        [&](fastgltf::sources::Array& vector) {
             int width, height, nrChannels;
             unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
             gltfImage = glTFImage {
@@ -144,7 +168,7 @@ bool Adren::Model::loadImages(fastgltf::Image& image) {
             auto& buffer = gltfModel.buffers[bufferView.bufferIndex];
             std::visit(fastgltf::visitor {
                 [](auto& arg) {},
-                [&](fastgltf::sources::Vector& vector) {
+                [&](fastgltf::sources::Array& vector) {
                     int width, height, nrChannels;
                     unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset, static_cast<int>(bufferView.byteLength), &width, &height, &nrChannels, 4);
                     gltfImage = glTFImage {
@@ -191,6 +215,7 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
         auto& primitive = newMesh.primitives[index];
 
         std::vector<Vertex> tempVertices;
+        std::vector<uint32_t> tempIndices;
 
         auto pos = prim->findAttribute("POSITION");
 
@@ -202,12 +227,13 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
             auto& iAccessor = gltfModel.accessors[prim->indicesAccessor.value()];
             auto& iBufferView = gltfModel.accessors[iAccessor.bufferViewIndex.value()];
 
-            fastgltf::iterateAccessorWithIndex<uint32_t>(gltfModel, iAccessor, [&](uint32_t index, size_t idx) {
-                indices.push_back(index);
+            primitive.firstIndex = static_cast<uint32_t>(iAccessor.byteOffset + iBufferView.byteOffset) / fastgltf::getElementByteSize(iAccessor.type, iAccessor.componentType);
+
+            fastgltf::iterateAccessor<uint32_t>(gltfModel, iAccessor, [&](uint32_t index) {
+                tempIndices.push_back(index);
             });
 
             primitive.indexCount = iAccessor.count;
-            primitive.firstIndex = static_cast<uint32_t>(iAccessor.byteOffset + iBufferView.byteOffset) / fastgltf::getElementByteSize(iAccessor.type, iAccessor.componentType);
         }
 
         if (pos != prim->attributes.end()) {
@@ -237,6 +263,7 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
             primitive.materialIndex = prim->materialIndex.value();
         }
 
+        indices.insert(indices.end(), tempIndices.begin(), tempIndices.end());
         vertices.insert(vertices.end(), tempVertices.begin(), tempVertices.end());
     }
 
@@ -245,13 +272,14 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
 }
 
 void Adren::Model::drawMesh(size_t index, VkCommandBuffer& buffer, VkPipelineLayout& layout, VkDescriptorSet& set, Offset& offset) {
-    Mesh mesh = meshes[index];
+    Mesh& mesh = meshes[index];
+
+    vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &set, 1, &offset.dynamic);
 
     for (auto& prim : mesh.primitives) {
         if (prim.indexCount > 0) {
-            Texture texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
-            const auto index = texture.index + offset.texture;
-            vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &set, 1, &offset.dynamic);
+            Texture& texture = textures[materials[prim.materialIndex].baseColorTextureIndex];
+            const int32_t index = texture.index + offset.texture;
             vkCmdPushConstants(buffer, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(index), &index);
             vkCmdDrawIndexed(buffer, prim.indexCount, 1, offset.index, offset.vertex, 0);
             offset.index += prim.indexCount;
