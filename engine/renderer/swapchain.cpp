@@ -27,7 +27,7 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(GLFWwindow* window, const VkSurfac
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
-    
+
     int width, height;
 
     glfwGetFramebufferSize(window, &width, &height);
@@ -47,6 +47,7 @@ void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
     VkExtent2D chosenExtent = chooseSwapExtent(window, swapChainSupport.capabilities);
 
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }

@@ -102,7 +102,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Renderer::debugCallback(
         break;
     }
 
-    std::string message = "[" + severityString + "] [" + messageTypeString + "]\n" + pCallbackData->pMessage;
+    std::string message = "[" + severityString + "] [" + messageTypeString + "]\n" + pCallbackData->pMessage + "\n\n";
     std::cerr << message << std::endl;
 
     return VK_FALSE;
@@ -262,16 +262,16 @@ void Adren::Renderer::render(Camera& camera) {
     
     
     if (models.size() >= 1) {
+        Offset offset{ 0, 0, 0, 0, 0, buffers.dynamicUniform.align };
         for (Model* model : models) {
-            Offset offset{ 0, 0, 0, 0, 0, buffers.dynamicUniform.align };
             for (auto& scene : model->gltfModel.scenes) {
                 for (auto& node : scene.nodeIndices) {
                     model->drawNode(node, commandBuffer, pipeline.layout, descriptor.sets[imageIndex], offset);
                 }
+                offset.texture += model->textures.size();
+                offset.dynamic *= static_cast<uint32_t>(offset.align);
             }
             
-            offset.texture += model->textures.size();
-            offset.dynamic *= static_cast<uint32_t>(offset.align);
         }
     }
     
@@ -327,7 +327,9 @@ void Adren::Renderer::init(GLFWwindow* window, Camera& camera) {
 }
 
 void Adren::Renderer::cleanup(Camera& camera) {
+#ifdef ADREN_DEBUG
     Adren::Debugger::log("Cleaning up Renderer!");
+#endif
     vkDeviceWaitIdle(devices->getDevice());
 
     vkDestroyCommandPool(devices->getDevice(), commandPool, nullptr);
@@ -340,13 +342,13 @@ void Adren::Renderer::cleanup(Camera& camera) {
     }
 
     Adren::Debugger::log("Rendering objects cleaned up!");
+    camera.destroy(devices->getAllocator()); Adren::Debugger::log("Camera cleaned up!");
     buffers.cleanup(); Adren::Debugger::log("Buffers cleaned up!");
     renderpass.cleanup(); Adren::Debugger::log("Render pass cleaned up!");
     swapchain.cleanup(); Adren::Debugger::log("Swapchain cleaned up!");
     pipeline.cleanup(); Adren::Debugger::log("Pipeline cleaned up!");
     descriptor.cleanup(); Adren::Debugger::log("Descriptor cleaned up!");
     images.cleanup(); Adren::Debugger::log("Images cleaned up!");
-    camera.destroy(devices->getAllocator()); Adren::Debugger::log("Camera cleaned up!");
     
     for (Model* m : models) {
         for (auto& tex : m->textures) {

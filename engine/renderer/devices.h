@@ -19,7 +19,7 @@ public:
     Devices(VkInstance& instance, VkSurfaceKHR& surface) : instance(instance), surface(surface) {}
 
     void init(VkSurfaceKHR& surface) { pickGPU(surface); createLogicalDevice(); createAllocator(); }
-    void cleanup() { vmaDestroyAllocator(getAllocator()); vkDestroyDevice(device, nullptr);  }
+    void cleanup() { vmaDestroyAllocator(allocator); vkDestroyDevice(device, nullptr);  }
     std::vector<const char*> getRequiredExtensions();
 #ifdef ADREN_DEBUG
     bool checkDebugSupport();

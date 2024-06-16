@@ -38,10 +38,8 @@ void Adren::Camera::callback(GLFWwindow* window, double xpos, double ypos) {
     cls->pitch += yoffset;
 
     // This prevents the view from being 360 vertically.
-    if (cls->pitch > 89.0f)
-        cls->pitch = 89.0f;
-    if (cls->pitch < -89.0f)
-        cls->pitch = -89.0f;
+    if (cls->pitch > 89.0f) cls->pitch = 89.0f;
+    if (cls->pitch < -89.0f) cls->pitch = -89.0f;
 
     // This converts the pitch and yaw coordinates into the 3d space by turning it to a vector.
     glm::vec3 direction;

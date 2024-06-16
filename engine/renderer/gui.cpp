@@ -16,8 +16,8 @@
 #include "debugger.h"
 #endif
 
-void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface) {
-    VkDescriptorPoolSize pool_sizes[] = {
+void Adren::GUI::createDescriptorPool() {
+   VkDescriptorPoolSize pool_sizes[] = {
         { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
         { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
@@ -30,7 +30,6 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
         { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
     };
-
     VkDescriptorPoolCreateInfo pool_info{};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -38,8 +37,15 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
 
+#ifdef ADREN_DEBUG
     Adren::Debugger::vibeCheck("IMGUI DESCRIPTOR POOL", vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool));
+#else
+    vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);
+#endif
+}
 
+void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface) {
+    createDescriptorPool();
     IMGUI_CHECKVERSION();
     ctx = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx);
@@ -89,6 +95,7 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
     queueFam = Adren::Tools::findQueueFamilies(gpu, surface);
 
     createRenderPass(camera);
+    createSampler();
     createCommands();
     createFramebuffers(camera);
 
@@ -128,8 +135,31 @@ void Adren::GUI::init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface)
 #endif
 }
 
+void Adren::GUI::createSampler() {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.maxAnisotropy = 1.0f;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeV = samplerInfo.addressModeU;
+    samplerInfo.addressModeW = samplerInfo.addressModeU;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.maxAnisotropy = 1.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 1.0f;
+    samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+#ifdef ADREN_DEBUG
+    Adren::Debugger::vibeCheck("IMGUI SAMPLER", vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler));
+#else
+    vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler);
+#endif
+}
+
 void Adren::GUI::cleanup() {
-    vkDeviceWaitIdle(device);
+    // vkDeviceWaitIdle(device);
     vkDestroyCommandPool(device, base.commandPool, nullptr);
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroySampler(device, base.sampler, nullptr);
@@ -181,27 +211,6 @@ void Adren::GUI::createRenderPass(Camera& camera) {
 
     base.depth.view = images.createImageView(base.depth.image, images.depth.format, VK_IMAGE_ASPECT_DEPTH_BIT);
    
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.maxAnisotropy = 1.0f;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV = samplerInfo.addressModeU;
-    samplerInfo.addressModeW = samplerInfo.addressModeU;
-    samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.maxAnisotropy = 1.0f;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 1.0f;
-    samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-#ifdef ADREN_DEBUG
-    Adren::Debugger::vibeCheck("IMGUI SAMPLER", vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler));
-#else
-    vkCreateSampler(device, &samplerInfo, nullptr, &base.sampler);
-#endif
-
     std::array<VkAttachmentDescription, 2> attachments{};
     attachments[0].format = swapchain.imgFormat;
     attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -306,7 +315,15 @@ void Adren::GUI::createCommands() {
 
 // This function recreates images, renderpass and framebuffer used to display the Vulkan scene to the GUI.
 // It re-renders the scene in a different display resolution dictated by the viewport function.
-void Adren::GUI::resize(Camera& camera) {
+// Thank you olkotov for inspiration https://github.com/ocornut/imgui/issues/1287#issuecomment-1093514753
+void Adren::GUI::resize(ImVec2& size, Camera& camera) {
+    if (size.x <= 0 || size.y <= 0) return;
+
+    camera.setWidth(size.x);
+    camera.setHeight(size.y);
+
+    vkDeviceWaitIdle(device);
+    
     // Destroying the images because we would have to recreate it in a different size.
     vmaDestroyImage(allocator, base.depth.image, base.depth.memory);
     vmaDestroyImage(allocator, base.color.image, base.color.memory);
@@ -319,10 +336,13 @@ void Adren::GUI::resize(Camera& camera) {
     vkDestroyRenderPass(device, base.renderpass, nullptr);
     vkDestroyFramebuffer(device, base.framebuffer, nullptr);
 
-
     // This creates a new renderpass and framebuffer with the new size
     createRenderPass(camera);
     createFramebuffers(camera);
+
+    // We are redefining base.set to have the new size.
+    base.set = ImGui_ImplVulkan_AddTexture(base.sampler, 
+               base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 // This function sets up the viewport element of the editor that shows what Vulkan is rendering.
@@ -344,20 +364,8 @@ void Adren::GUI::viewport(Camera& camera) {
     // This will show the current size of the viewport.
     ImVec2 size = ImGui::GetContentRegionAvail();
 
-    // Thank you olkotov for inspiration https://github.com/ocornut/imgui/issues/1287#issuecomment-1093514753
     if (size.x != camera.getWidth() || size.y != camera.getHeight()) {
-        if (size.x <= 0 || size.y <= 0) {
-            return;
-        }
-
-        camera.setWidth(size.x);
-        camera.setHeight(size.y);
-
-        vkDeviceWaitIdle(device);
-        resize(camera);
-
-        // We are redefining base.set to have the new size.
-        base.set = ImGui_ImplVulkan_AddTexture(base.sampler, base.color.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        resize(size, camera);
     }
 
     // This is the viewport tabs for when we want to use the space for more than just the viewport.

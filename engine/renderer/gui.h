@@ -44,11 +44,12 @@ public:
     ImGuiStyle* style = nullptr;
 private:
     void createCommands();
+    void createSampler();
     void createRenderPass(Camera& camera);
     void createFramebuffers(Camera& camera);
-    void resize(Camera& camera);
+    void resize(ImVec2& size, Camera& camera);
+    void createDescriptorPool();
     
-    Buffers& buffers;
     Swapchain& swapchain;
     Images& images;
 
@@ -59,7 +60,5 @@ private:
     QueueFamilyIndices queueFam;
     VkPhysicalDevice& gpu;
     VmaAllocator& allocator;
-
-    bool cameraDisabled = false;
 };
 }

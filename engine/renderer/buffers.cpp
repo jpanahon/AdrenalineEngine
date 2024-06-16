@@ -53,8 +53,10 @@ void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPo
     vmaDestroyBuffer(allocator, iStaging.buffer, iStaging.memory);
 
 #ifdef ADREN_DEBUG
-    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertex.buffer, "VERTEX BUFFER");
-    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, (uint64_t)index.buffer, "INDEX BUFFER");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, 
+                          (uint64_t)vertex.buffer, "VERTEX BUFFER");
+    Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_BUFFER, 
+                          (uint64_t)index.buffer, "INDEX BUFFER");
 #endif
 }
 
@@ -84,13 +86,16 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
 }
 
 void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models) {
+    // Get the GPU's properties to find the minimum alignment value.
     VkPhysicalDeviceProperties gpuProperties{};
     vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
+
     VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
     dynamicUniform.align = sizeof(glm::mat4);
 
     if (minUboAlignment > 0) {
-        dynamicUniform.align = (dynamicUniform.align + minUboAlignment - 1) & ~(minUboAlignment - 1);
+        dynamicUniform.align = (dynamicUniform.align + minUboAlignment - 1) & 
+                               ~(minUboAlignment - 1);
     }
     
     uint32_t modelSize = 0;
@@ -124,7 +129,8 @@ void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     std::vector<glm::mat4> matrices;
 
     for (Model* model : models) {
-        matrices.insert(matrices.end(), model->matrices.begin(), model->matrices.end());
+        matrices.insert(matrices.end(), model->matrices.begin(), 
+                        model->matrices.end());
     }
 
 #ifdef ADREN_DEBUG
@@ -137,12 +143,11 @@ void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
 }
 
 void Adren::Buffers::cleanup() {
-    if (uboData.model) { Adren::Tools::alignedFree(uboData.model); }
+    if (uboData.model) Adren::Tools::alignedFree(uboData.model); 
 
     vmaDestroyBuffer(allocator, vertex.buffer, vertex.memory);
     vmaDestroyBuffer(allocator, index.buffer, index.memory);
 
     vmaUnmapMemory(allocator, dynamicUniform.memory);
     vmaDestroyBuffer(allocator, dynamicUniform.buffer, dynamicUniform.memory);
-    dynamicUniform.mapped = nullptr;
 }

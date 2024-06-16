@@ -7,7 +7,7 @@ CMakePresets.json
 Makefile
 cmake_install.cmake 
 imgui.ini
-/CMakeFiles
+/build
 /lib/glfw-3.3.4/src/CMakeFiles
 /lib/glfw-3.3.4/examples
 /lib/glfw-3.3.4/tests

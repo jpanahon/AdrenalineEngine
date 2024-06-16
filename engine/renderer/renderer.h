@@ -8,6 +8,8 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "model.h"
 #include "camera.h"
@@ -29,9 +31,9 @@ public:
     void wait() { vkDeviceWaitIdle(devices->getDevice()); }
     void addModel(char* path);
     void processInput(GLFWwindow* window, Camera& camera);
-    //Model* cubes = new Model("../engine/resources/models/deccer/cubes.gltf");
-    Model* sponza = new Model("../engine/resources/models/sponza/sponza.gltf");
-    std::vector<Model*> models = { sponza };
+    Model* cubes = new Model("../engine/resources/models/deccer/cubes.gltf");
+    std::vector<Model*> models = { cubes };
+
     Devices* devices = new Devices{instance, surface};
     GUI gui{devices, buffers, images, swapchain, instance};
 
