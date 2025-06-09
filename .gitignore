@@ -22,3 +22,7 @@ imgui.ini
 /windows-default
 /.vs
 /engine/resources/models
+output.txt
+/.cache
+/.vscode
+compile_commands.json
