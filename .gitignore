@@ -26,3 +26,4 @@ output.txt
 /.cache
 /.vscode
 compile_commands.json
+/CMakeFiles
