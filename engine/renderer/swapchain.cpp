@@ -5,7 +5,6 @@
     This has the definitions of the functions related to the swapchain.
 */
 
-#include "info.h"
 #include "swapchain.h"
 #include "images.h"
 
@@ -40,12 +39,11 @@ VkExtent2D Adren::Swapchain::chooseSwapExtent(GLFWwindow* window, const VkSurfac
 }
 
 void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
-    SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(gpu, surface);
+    Devices::SwapChainSupportDetails swapChainSupport = devices->querySwapChainSupport();
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D chosenExtent = chooseSwapExtent(window, swapChainSupport.capabilities);
-
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
     
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -63,7 +61,7 @@ void Adren::Swapchain::create(GLFWwindow* window, VkSurfaceKHR& surface) {
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(gpu, surface);
+    Devices::QueueFamilyIndices indices = devices->findQueueFamilies(devices->getGPU());
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {

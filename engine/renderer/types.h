@@ -75,40 +75,8 @@ struct CameraObject {
     alignas(16) glm::mat4 proj;
 };
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-    
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
 struct UboData {
     glm::mat4 *model = nullptr;
-};
-
-struct Frame {
-    VkCommandPool commandPool;
-    VkCommandBuffer commandBuffer;
-    VkFence fence;
-    VkSemaphore iSemaphore;
-    VkSemaphore rSemaphore;
-};
-
-struct Offset {
-    int32_t index = 0;
-    uint32_t vertex = 0;
-    uint32_t texture = 0;
-    uint32_t dynamic = 0;
-    uint32_t model = 0;
-    VkDeviceSize align = 0;
 };
 
 struct Buffer {

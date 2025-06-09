@@ -155,7 +155,10 @@ bool Adren::Model::loadImages(fastgltf::Image& image) {
         },
         [&](fastgltf::sources::Array& vector) {
             int width, height, nrChannels;
-            unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+            unsigned char* data = stbi_load_from_memory(
+            vector.bytes.data(),static_cast<int>(vector.bytes.size()), &width, &height, 
+              &nrChannels, 4
+            );
             gltfImage = glTFImage {
                 .buffer = data,
                 .bufferSize = static_cast<VkDeviceSize>(width * height * 4),
@@ -170,7 +173,11 @@ bool Adren::Model::loadImages(fastgltf::Image& image) {
                 [](auto& arg) {},
                 [&](fastgltf::sources::Array& vector) {
                     int width, height, nrChannels;
-                    unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset, static_cast<int>(bufferView.byteLength), &width, &height, &nrChannels, 4);
+                    unsigned char* data = stbi_load_from_memory(
+                        vector.bytes.data() + bufferView.byteOffset, 
+                        static_cast<int>(bufferView.byteLength), &width, 
+                        &height, &nrChannels, 4
+                    );
                     gltfImage = glTFImage {
                         .buffer = data,
                         .bufferSize = static_cast<VkDeviceSize>(width * height * 4),
@@ -227,11 +234,16 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
             auto& iAccessor = gltfModel.accessors[prim->indicesAccessor.value()];
             auto& iBufferView = gltfModel.accessors[iAccessor.bufferViewIndex.value()];
 
-            primitive.firstIndex = static_cast<uint32_t>(iAccessor.byteOffset + iBufferView.byteOffset) / fastgltf::getElementByteSize(iAccessor.type, iAccessor.componentType);
+            primitive.firstIndex = static_cast<uint32_t>(
+                iAccessor.byteOffset + iBufferView.byteOffset) / 
+                fastgltf::getElementByteSize(iAccessor.type, iAccessor.componentType
+            );
 
-            fastgltf::iterateAccessor<uint32_t>(gltfModel, iAccessor, [&](uint32_t index) {
-                tempIndices.push_back(index);
-            });
+            fastgltf::iterateAccessor<uint32_t>(
+                gltfModel, iAccessor, [&](uint32_t index) {
+                    tempIndices.push_back(index);
+                }
+            );
 
             primitive.indexCount = iAccessor.count;
         }
@@ -242,10 +254,12 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
             
             tempVertices.resize(vAccessor.count);
 
-            fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfModel, vAccessor, [&](glm::vec3 position, size_t idx) {
-                tempVertices[idx].pos = position;
-                tempVertices[idx].color = glm::vec3(1.0f);
-            });
+            fastgltf::iterateAccessorWithIndex<glm::vec3>(
+                gltfModel, vAccessor, [&](glm::vec3 position, size_t idx) {
+                    tempVertices[idx].pos = position;
+                    tempVertices[idx].color = glm::vec3(1.0f);
+                }
+            );
 
             primitive.vertexCount = vAccessor.count;
         }
@@ -256,9 +270,11 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
             auto& tAccessor = gltfModel.accessors[texCoord->second];
             if (!tAccessor.bufferViewIndex.has_value()) continue;
 
-            fastgltf::iterateAccessorWithIndex<glm::vec2>(gltfModel, tAccessor, [&](glm::vec2 position, size_t idx) {
-                tempVertices[idx].texCoord = position;
-            });
+            fastgltf::iterateAccessorWithIndex<glm::vec2>(
+                gltfModel, tAccessor, [&](glm::vec2 position, size_t idx) {
+                    tempVertices[idx].texCoord = position;
+                }
+            );
 
             primitive.materialIndex = prim->materialIndex.value();
         }
@@ -271,7 +287,8 @@ bool Adren::Model::loadMesh(fastgltf::Mesh& mesh) {
     return true;
 }
 
-void Adren::Model::drawMesh(size_t index, VkCommandBuffer& buffer, VkPipelineLayout& layout, VkDescriptorSet& set, Offset& offset) {
+void Adren::Model::drawMesh(size_t index, VkCommandBuffer& buffer, 
+                            VkPipelineLayout& layout, VkDescriptorSet& set, Offset& offset) {
     Mesh& mesh = meshes[index];
 
     vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &set, 1, &offset.dynamic);
@@ -288,7 +305,8 @@ void Adren::Model::drawMesh(size_t index, VkCommandBuffer& buffer, VkPipelineLay
     }
 }
 
-void Adren::Model::drawNode(size_t index, VkCommandBuffer& buffer, VkPipelineLayout& layout, VkDescriptorSet& set, Offset& offset) {
+void Adren::Model::drawNode(size_t index, VkCommandBuffer& buffer, VkPipelineLayout& layout, 
+                            VkDescriptorSet& set, Offset& offset) {
     auto& node = gltfModel.nodes[index];
 
     if (node.meshIndex.has_value()) {

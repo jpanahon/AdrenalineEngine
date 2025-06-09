@@ -6,12 +6,6 @@
 */
 
 #include "images.h"
-#include "tools.h"
-#include <stb/stb_image.h>
-
-#ifdef ADREN_DEBUG
-#include "debugger.h"
-#endif
 
 namespace Adren {
 void Images::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VmaMemoryUsage vmaUsage, Image& image) {
@@ -34,7 +28,7 @@ void Images::createImage(uint32_t width, uint32_t height, VkFormat format, VkIma
     allocInfo.usage = vmaUsage;
     allocInfo.requiredFlags = properties;
 
-    vmaCreateImage(allocator, &imageInfo, &allocInfo, &image.image, &image.memory, nullptr);
+    vmaCreateImage(devices->getAllocator(), &imageInfo, &allocInfo, &image.image, &image.memory, nullptr);
 }
 
 VkImageView Images::createImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags) {
@@ -50,13 +44,13 @@ VkImageView Images::createImageView(VkImage& image, VkFormat format, VkImageAspe
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    vkCreateImageView(device, &viewInfo, nullptr, &imageView);
+    vkCreateImageView(devices->getDevice(), &viewInfo, nullptr, &imageView);
 
     return imageView;
 }
 
 void Images::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, VkCommandPool& commandPool) {
-    VkCommandBuffer commandBuffer = Tools::beginSingleTimeCommands(device, commandPool);
+    VkCommandBuffer commandBuffer = devices->beginSingleTimeCommands(commandPool);
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -93,11 +87,11 @@ void Images::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout
     }
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-    Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
+    devices->endSingleTimeCommands(commandBuffer, commandPool);
 }
 
 void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool& commandPool) {
-    VkCommandBuffer commandBuffer = Tools::beginSingleTimeCommands(device, commandPool);
+    VkCommandBuffer commandBuffer = devices->beginSingleTimeCommands(commandPool);
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -112,41 +106,7 @@ void Images::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
-}
-
-void Images::loadTextures(VkInstance& instance, std::vector<Model*>& models, std::vector<Model::Texture>& textures, VkCommandPool& commandPool) {
-    for (Model* model : models) {
-        for (Model::glTFImage& image : model->images) {
-            Model::Texture texture{};
-
-            Buffer staging;
-            buffers.createBuffer(allocator, image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_AUTO);
-
-            uint8_t* data;
-            vmaMapMemory(allocator, staging.memory, (void**)&data);
-            memcpy(data, image.buffer, image.bufferSize);
-            vmaUnmapMemory(allocator, staging.memory);
-
-            createImage(image.width, image.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, texture);
-            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool);
-            copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height), commandPool);
-            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool);
-
-            vmaDestroyBuffer(allocator, staging.buffer, staging.memory);
-
-            texture.view = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-            textures.push_back(texture);
-            stbi_image_free(image.buffer);
-
-#ifdef ADREN_DEBUG
-            Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE, (uint64_t)texture.image, "TEXTURE IMAGE");
-            Adren::Debugger::label(instance, device, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)texture.view, "TEXTURE IMAGE VIEW");
-#endif
-        }
-    }
+    devices->endSingleTimeCommands(commandBuffer, commandPool);
 }
 
 void Images::createDepthResources(VkExtent2D extent) {
@@ -155,7 +115,7 @@ void Images::createDepthResources(VkExtent2D extent) {
     VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(gpu, format, &props);
+        vkGetPhysicalDeviceFormatProperties(devices->getGPU(), format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             depth.format = format; break;
@@ -171,7 +131,7 @@ void Images::createDepthResources(VkExtent2D extent) {
 }
 
 void Images::cleanup() {
-    vmaDestroyImage(allocator, depth.image, depth.memory);
+    vmaDestroyImage(devices->getAllocator(), depth.image, depth.memory);
 }
 
 }

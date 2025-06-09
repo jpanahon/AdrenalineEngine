@@ -5,6 +5,7 @@
     This initializes the Vulkan API.
 */
 
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #define VMA_IMPLEMENTATION
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
@@ -12,8 +13,8 @@
 
 #ifdef ADREN_DEBUG
     #define VMA_DEBUG_LOG(format, ...) do { \
-           printf(format, __VA_ARGS__); \
-           printf("\n"); \
+           printf(format, __VA_ARGS__);\
+           printf("\n");\
        } while(false)
 #endif
 
@@ -23,6 +24,18 @@
 #include <chrono>
 #include <algorithm>
 
+VkApplicationInfo Adren::Renderer::appInfo() {
+    std::string appName = "Adrenaline Engine";
+
+    return VkApplicationInfo {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = appName.c_str(),
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName = "Adrenaline Engine",
+        .engineVersion = VK_API_VERSION_1_2,
+        .apiVersion = VK_API_VERSION_1_2
+    };
+}
 void Adren::Renderer::createInstance() {
 #ifdef ADREN_DEBUG
     if (!Adren::Renderer::devices->checkDebugSupport()) {
@@ -30,10 +43,10 @@ void Adren::Renderer::createInstance() {
     }
 #endif
 
-    VkApplicationInfo appInfo = Adren::Info::appInfo();
+    VkApplicationInfo appInfo = appInfo();
     
     VkInstanceCreateInfo instanceInfo{};
-    instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO; 
+    instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
     
     auto extensions = devices->getRequiredExtensions();
@@ -110,8 +123,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Adren::Renderer::debugCallback(
 void Adren::Renderer::fillDebugInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.messageSeverity = 
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | 
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | 
+                            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
 }
 
@@ -121,7 +137,8 @@ VkResult Adren::Renderer::createDebugUtils(
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pDebugMessenger
 ) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = 
+        (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
@@ -130,7 +147,8 @@ void Adren::Renderer::destroyDebugUtils(
     VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator
 ) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto func = 
+        (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) func(instance, debugMessenger, pAllocator);
 }
 
@@ -144,44 +162,158 @@ void Adren::Renderer::setupDebugger() {
 }
 
 #endif
+
+void Adren::Renderer::createBuffers() {
+    // Model Buffers
+    {
+        //Buffer dynamicUniform;
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+
+        for (Model* model : models) {
+            indices.insert(indices.end(), model->indices.begin(), model->indices.end());
+            vertices.insert(vertices.end(), model->vertices.begin(), model->vertices.end());
+        }
+
+        VkDeviceSize vertexSize = sizeof(vertices[0]) * vertices.size();
+        buffers.vertex = Buffer{devices, vertexSize};
+        Buffer vStaging(devices, vertexSize);
+        vStaging.create(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        vmaMapMemory(devices->getAllocator(), vStaging.memory, &vStaging.mapped);
+        memcpy(vStaging.mapped, vertices.data(), (size_t)buffers.vertex.size);
+        vmaUnmapMemory(devices->getAllocator(), vStaging.memory);
+
+        buffers.vertex.create(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        
+        vStaging.copyTo(buffers.vertex.buffer, commandPool);
+        //copyBuffer(vStaging.buffer, buffers.vertex.buffer, buffers.vertex.size, commandPool);
+
+        vmaDestroyBuffer(devices->getAllocator(), vStaging.buffer, vStaging.memory);
+
+        VkDeviceSize indicesSize = sizeof(indices[0]) * indices.size();
+        buffers.index = Buffer{devices, indicesSize};
+
+        Buffer iStaging{devices, indicesSize};
+        iStaging.create(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        vmaMapMemory(devices->getAllocator(), iStaging.memory, &iStaging.mapped);
+        memcpy(iStaging.mapped, indices.data(), (size_t)indicesSize);
+        vmaUnmapMemory(devices->getAllocator(), iStaging.memory);
+        
+        buffers.index.create(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        
+        iStaging.copyTo(buffers.index.buffer, commandPool);
+        //copyBuffer(iStaging.buffer, buffers.index.buffer, buffers.index.size, commandPool);
+
+        vmaDestroyBuffer(devices->getAllocator(), iStaging.buffer, iStaging.memory);
+
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_BUFFER, 
+                            (uint64_t)buffers.vertex.buffer, "VERTEX BUFFER");
+        Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_BUFFER, 
+                            (uint64_t)buffers.index.buffer, "INDEX BUFFER");
+    #endif
+    }
+
+    camera.create();
+}
+
 void Adren::Renderer::initVulkan(GLFWwindow* window, Camera& camera) {
     Adren::Debugger::log("Initializing program..");
 
     // This function sets up the Vulkan instance.
-    createInstance(); Adren::Debugger::log("Instance created..");
+    createInstance();
 
     // This sets up the debugger if debug mode is enabled.
 #ifdef ADREN_DEBUG
-    setupDebugger(); Adren::Debugger::log("Debug messenger set up..");
+    Adren::Debugger::log("Instance created..");
+    setupDebugger();
+    Adren::Debugger::log("Debug messenger set up..");
 #endif
 
-    glfwCreateWindowSurface(instance, window, nullptr, &surface); Adren::Debugger::log("Surface created..");
-    devices->init(surface); Adren::Debugger::log("Devices initialized..");
-    swapchain.create(window, surface); Adren::Debugger::log("Swapchain created..");
-    swapchain.createImageViews(images); Adren::Debugger::log("Image views created..");
-    images.createDepthResources(swapchain.extent); Adren::Debugger::log("Depth resources created..");
-    renderpass.create(images.depth, swapchain.imgFormat, instance); Adren::Debugger::log("Main render pass created..");
-    descriptor.createLayout(models); Adren::Debugger::log("Descriptor set layout created..");
-    pipeline.create(swapchain, descriptor.layout, renderpass.handle); Adren::Debugger::log("Graphics pipeline created..");
-    createCommands(); Adren::Debugger::log("Command pool and buffers created..");
-    createSyncObjects(); Adren::Debugger::log("Sync objects created..");
-    swapchain.createFramebuffers(images.depth, renderpass.handle); Adren::Debugger::log("Main framebuffers created..");
-    images.loadTextures(instance, models, textures, commandPool); Adren::Debugger::log("Model textures created..");
-    buffers.createModelBuffers(models, commandPool); Adren::Debugger::log("Index buffers created..");
-    camera.create(window, buffers, devices->getAllocator()); Adren::Debugger::log("Camera created..");
-    buffers.createUniformBuffers(swapchain.images, models); Adren::Debugger::log("Dynamic uniform buffer created..");
-    buffers.updateDynamicUniformBuffer(models);
-    descriptor.createPool(swapchain.images); Adren::Debugger::log("Descriptor pool created..");
-    descriptor.createSets(textures, swapchain.images, camera.cam); Adren::Debugger::log("Descriptor sets created..");
-
+    glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    
 #ifdef ADREN_DEBUG
-        Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)commandPool, "PRIMARY COMMAND POOL");
-        Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderpass.handle, "MAIN RENDER PASS");
+    Adren::Debugger::log("Surface created..");
+#endif
+    devices->init(surface);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Devices initialized..");
+#endif
+    swapchain.create(window, surface);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Swapchain created..");
+#endif
+    swapchain.createImageViews(images);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Image views created..");
+#endif
+    images.createDepthResources(swapchain.extent);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Depth resources created..");
+#endif
+    renderpass.create(images.depth, swapchain.imgFormat, instance);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Main render pass created..");
+#endif
+    descriptor.createLayout(models);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Descriptor set layout created..");
+#endif
+    std::pair<std::string, std::string> shaders{"../resources/shaders/vert.spv", "../resources/shaders/frag.spv"};
+    pipeline.create(shaders, swapchain, descriptor.layout, renderpass.handle);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Graphics pipeline created..");
+#endif
+    createCommands();
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Command pool and buffers created..");
+#endif
+    createSyncObjects();
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Sync objects created..");
+#endif
+    swapchain.createFramebuffers(images.depth, renderpass.handle);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Main framebuffers created..");
+#endif
+    loadTextures(instance, models, textures, commandPool);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Model textures created..");
+#endif
+    createModelBuffers(models, commandPool);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Index buffers created..");
+#endif
+    camera.create(window, buffers, devices->getAllocator());
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Camera created..");
+#endif
+    createUniformBuffers(swapchain.images, models);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Dynamic uniform buffer created..");
+#endif
+    buffers.updateDynamicUniformBuffer(models);
+    
+    descriptor.createPool(swapchain.images);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Descriptor pool created..");
+#endif
+    descriptor.createSets(textures, swapchain.images, camera.cam);
+#ifdef ADREN_DEBUG
+    Adren::Debugger::log("Descriptor sets created..");
+    Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)commandPool, "PRIMARY COMMAND POOL");
+    Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderpass.handle, "MAIN RENDER PASS");
 #endif
 }
 
 void Adren::Renderer::createCommands() {
-    QueueFamilyIndices queueFamilyIndices = Adren::Tools::findQueueFamilies(devices->getGPU(), surface);
+    Devices::QueueFamilyIndices queueFamilyIndices = devices->findQueueFamilies(devices->getGPU());
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -229,6 +361,40 @@ void Adren::Renderer::createSyncObjects() {
     for (Frame& frame : frames) {
         if (vkCreateSemaphore(devices->getDevice(), &semaphoreInfo, nullptr, &frame.iSemaphore) != VK_SUCCESS || vkCreateSemaphore(devices->getDevice(), &semaphoreInfo, nullptr, &frame.rSemaphore) != VK_SUCCESS || vkCreateFence(devices->getDevice(), &fenceInfo, nullptr, &frame.fence) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
+        }
+    }
+}
+
+void Adren::Renderer::loadTextures() {
+    for (Model* model : models) {
+        for (Model::glTFImage& image : model->images) {
+            Model::Texture texture{};
+
+            Buffer staging;
+            buffers.createBuffer(devices->getAllocator(), image.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging, VMA_MEMORY_USAGE_AUTO);
+
+            uint8_t* data;
+            vmaMapMemory(devices->getAllocator(), staging.memory, (void**)&data);
+            memcpy(data, image.buffer, image.bufferSize);
+            vmaUnmapMemory(devices->getAllocator(), staging.memory);
+
+            createImage(image.width, image.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO, texture);
+            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool);
+            copyBufferToImage(staging.buffer, texture.image, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height), commandPool);
+            transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool);
+
+            vmaDestroyBuffer(devices->getAllocator(), staging.buffer, staging.memory);
+
+            texture.view = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+            textures.push_back(texture);
+            stbi_image_free(image.buffer);
+
+#ifdef ADREN_DEBUG
+            Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_IMAGE, (uint64_t)texture.image, "TEXTURE IMAGE");
+            Adren::Debugger::label(instance, devices->getDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)texture.view, "TEXTURE IMAGE VIEW");
+#endif
         }
     }
 }
@@ -323,7 +489,7 @@ void Adren::Renderer::render(Camera& camera) {
 void Adren::Renderer::init(GLFWwindow* window, Camera& camera) { 
     initVulkan(window, camera);
     window = window;
-    gui.init(camera, window, surface); 
+    gui.init(camera, window, surface);
 }
 
 void Adren::Renderer::cleanup(Camera& camera) {
@@ -342,13 +508,31 @@ void Adren::Renderer::cleanup(Camera& camera) {
     }
 
     Adren::Debugger::log("Rendering objects cleaned up!");
-    camera.destroy(devices->getAllocator()); Adren::Debugger::log("Camera cleaned up!");
-    buffers.cleanup(); Adren::Debugger::log("Buffers cleaned up!");
-    renderpass.cleanup(); Adren::Debugger::log("Render pass cleaned up!");
-    swapchain.cleanup(); Adren::Debugger::log("Swapchain cleaned up!");
-    pipeline.cleanup(); Adren::Debugger::log("Pipeline cleaned up!");
-    descriptor.cleanup(); Adren::Debugger::log("Descriptor cleaned up!");
-    images.cleanup(); Adren::Debugger::log("Images cleaned up!");
+    camera.destroy(devices->getAllocator());Adren::Debugger::log("Camera cleaned up!");
+    buffers.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Buffers cleaned up!");
+    #endif
+    renderpass.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Render pass cleaned up!");
+    #endif
+    swapchain.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Swapchain cleaned up!");
+    #endif
+    pipeline.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Pipeline cleaned up!");
+    #endif
+    descriptor.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Descriptor cleaned up!");
+    #endif
+    images.cleanup();
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::log("Images cleaned up!");
+    #endif
     
     for (Model* m : models) {
         for (auto& tex : m->textures) {
@@ -365,12 +549,12 @@ void Adren::Renderer::cleanup(Camera& camera) {
 
     Adren::Debugger::log("Textures cleaned up!");
 
-    vkDestroySurfaceKHR(instance, surface, nullptr); Adren::Debugger::log("Surface cleaned up!");
-    gui.cleanup(); Adren::Debugger::log("GUI cleaned up!");
-    devices->cleanup(); Adren::Debugger::log("Devices cleaned up!");
+    gui.cleanup();Adren::Debugger::log("GUI cleaned up!");
+    devices->cleanup();Adren::Debugger::log("Devices cleaned up!");
+    vkDestroySurfaceKHR(instance, surface, nullptr);Adren::Debugger::log("Surface cleaned up!");
 
 #ifdef ADREN_DEBUG 
-    destroyDebugUtils(instance, debugMessenger, nullptr); Adren::Debugger::log("Debugger cleaned up!");
+    destroyDebugUtils(instance, debugMessenger, nullptr);Adren::Debugger::log("Debugger cleaned up!");
 #endif
     vkDestroyInstance(instance, nullptr);
 }
@@ -399,7 +583,7 @@ void Adren::Renderer::reloadScene(std::vector<Model*>& models, Camera& camera) {
         vmaDestroyImage(devices->getAllocator(), texture.image, texture.memory);
     }
 
-    textures.clear(); Adren::Debugger::log("Textures destroyed..");
+    textures.clear();Adren::Debugger::log("Textures destroyed..");
 
     vkDestroyDescriptorSetLayout(devices->getDevice(), descriptor.layout, nullptr);
     Adren::Debugger::log("Descriptor set layout destroyed..");

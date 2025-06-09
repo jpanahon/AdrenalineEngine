@@ -17,7 +17,7 @@ void Adren::Engine::makeWindow() {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-    // This attempts to replicate 1200 x 700 in different resolutions to make a consistant viewport.
+    // This attempts to replicate 1200 x 700 in different resolutions to make a consistent viewport.
     int32_t width = (int32_t)((double)mode->width * 62.5) / 100;
     int32_t height = (int32_t)round((double)mode->height * 64.81 / 100);
     camera.setWidth(width);

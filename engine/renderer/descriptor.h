@@ -6,14 +6,14 @@
 */
 
 #pragma once
-#include "buffers.h"
+#include "devices.h"
 
 namespace Adren {
 class Descriptor {
 public:
-	Descriptor(Devices* devices, Buffers& buffers) : device(devices->getDevice()), buffers(buffers) {}
+	Descriptor(Devices* devices) : device(devices->getDevice()) {}
 
-	void createLayout(std::vector<Model*>& models);
+	void createLayout();
 	void createPool(std::vector<VkImage>& images);
 	void createSets(std::vector<Model::Texture>& textures, std::vector<VkImage>& images, Buffer& cam);
 
@@ -24,8 +24,12 @@ public:
 	VkDescriptorPool pool = VK_NULL_HANDLE;
 	VkSampler sampler = VK_NULL_HANDLE;
 private:
-	void fillWrites(std::array<VkWriteDescriptorSet, 4>& write, int index, VkDescriptorSet& dSet, int binding, VkDescriptorType type, size_t& count);
-	Buffers& buffers;
+	void fillWrites(std::array<VkWriteDescriptorSet, 4>& write, int index, VkDescriptorSet& dSet, int binding, 
+					VkDescriptorType type, size_t& count);
+	VkDescriptorSetLayoutBinding uboLayoutBinding(VkDescriptorType type, 
+		VkShaderStageFlags stageFlags, uint32_t binding, uint32_t descriptorCount = 1); 
+	VkDescriptorSetLayoutBinding samplerLayoutBinding();
+	VkDescriptorSetLayoutBinding textureLayoutBinding(uint32_t count);
 	VkDevice& device;
 };
 }

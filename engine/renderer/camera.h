@@ -18,14 +18,15 @@ public:
     glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    enum Direction {
-        Forward, Backward, Left, Right, Jump, Crouch
-    };
-
     Buffer cam;
     float speed = 0.5f;
     int fov = 90;
     int drawDistance = 10;
+    
+    enum Direction {
+        Forward, Backward, Left, Right, Jump, Crouch
+    };
+
 	static void callback(GLFWwindow* window, double xpos, double ypos);
 
     // This puts default position of the mouse at the center of the window
@@ -36,6 +37,7 @@ public:
     void update();
     int32_t getWidth() const { return width; }
     int32_t getHeight() const { return height; }
+    Buffer getBuffer() const { return cam; }
     void setWidth(int32_t size) { this->width = size; }
     void setHeight(int32_t size) { this->height = size; }
     bool& isToggled() { return toggled; }

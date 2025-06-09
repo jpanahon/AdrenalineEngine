@@ -6,9 +6,8 @@
 */
 
 #include "devices.h"
-#include "info.h"
-#include "tools.h"
 #include <cstring>
+#include <set>
 
 #ifdef ADREN_DEBUG
 #include "debugger.h"
@@ -30,14 +29,47 @@ bool Adren::Devices::checkDeviceExtensionSupport(VkPhysicalDevice& device) {
     return requiredExtensions.empty();
 }
 
-bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice& card, VkSurfaceKHR& surface) {
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(card, surface);
+Adren::Devices::QueueFamilyIndices Adren::Devices::findQueueFamilies(VkPhysicalDevice& card) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(card, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(card, i, surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+bool Adren::Devices::isDeviceSuitable(VkPhysicalDevice& card) {
+    QueueFamilyIndices indices = findQueueFamilies(card);
     
     const bool extensionsSupported = checkDeviceExtensionSupport(card);
     
     bool swapChainAdequate = false;
+
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = Adren::Tools::querySwapChainSupport(card, surface); 
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(); 
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
     
@@ -59,7 +91,7 @@ void Adren::Devices::pickGPU(VkSurfaceKHR& surface) {
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     for (auto& card : devices) {
-        if (isDeviceSuitable(card, surface)) {
+        if (isDeviceSuitable(card)) {
             gpu = card;
             break;
         }
@@ -71,11 +103,15 @@ void Adren::Devices::pickGPU(VkSurfaceKHR& surface) {
 }
 
 void Adren::Devices::createLogicalDevice() {
-    QueueFamilyIndices indices = Adren::Tools::findQueueFamilies(gpu, surface);
+    QueueFamilyIndices indices = findQueueFamilies(gpu);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
-    VkDeviceQueueCreateInfo queueCreateInfo = Adren::Info::deviceQueueCreateInfo();
+    VkDeviceQueueCreateInfo queueCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueCount = 1
+    };
+    
     const float queuePriority = 1.0f;
 
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -184,4 +220,93 @@ void Adren::Devices::createAllocator() {
     allocatorInfo.pVulkanFunctions = &vulkanFunctions;
     allocatorInfo.flags = flags;
     vmaCreateAllocator(&allocatorInfo, &allocator);
+}
+
+Adren::Devices::SwapChainSupportDetails Adren::Devices::querySwapChainSupport() {
+    SwapChainSupportDetails details;
+    
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.capabilities);
+    
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
+    
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.formats.data());
+    }
+    
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentModeCount, nullptr);
+    
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentModeCount, details.presentModes.data());
+    }
+    
+    return details;
+}
+
+VkCommandBuffer Adren::Devices::beginSingleTimeCommands(VkCommandPool& commandPool) {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = 1;
+    
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    
+    return commandBuffer;
+}
+
+void Adren::Devices::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool& commandPool) {
+    vkEndCommandBuffer(commandBuffer);
+    
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
+
+uint32_t Adren::Devices::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(gpu, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+void* Adren::Devices::alignedAlloc(size_t size, size_t alignment) {
+    void *data = nullptr;
+#if defined(_MSC_VER) || defined(__MINGW32__)
+    data = _aligned_malloc(size, alignment);
+#else
+    int res = posix_memalign(&data, alignment, size);
+    if (res != 0)
+        data = nullptr;
+#endif
+    return data;
+}
+
+void Adren::Devices::alignedFree(void* data) {
+#if defined(_MSC_VER) || defined(__MINGW32__)
+    _aligned_free(data);
+#else
+    free(data);
+#endif
 }

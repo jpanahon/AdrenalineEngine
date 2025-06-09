@@ -7,17 +7,17 @@
 
 #pragma once
 #include <GLFW/glfw3.h>
+#define GLFW_INCLUDE_VULKAN
 #include <iostream>
-#include <optional>
 
 namespace Adren::Debugger {
 	inline void log(std::string message) {
 		std::cerr << message << std::endl;
 	}
 
-	inline void vibeCheck(std::string name, VkResult x) {
-		if (x != VK_SUCCESS) {
-			std::cerr << "VULKAN ERROR FOR " << name << ": " << x << "\n \n" << std::endl;
+	inline void vibeCheck(std::string name, VkResult result) {
+		if (result != VK_SUCCESS) {
+			std::cerr << "VULKAN ERROR FOR " << name << ": " << result << "\n \n" << std::endl;
 			abort();
 		}
 	}

@@ -11,14 +11,44 @@
 #include "debugger.h"
 #endif
 
-void Adren::Descriptor::createLayout(std::vector<Model*>& models) {
-    VkDescriptorSetLayoutBinding uboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
+VkDescriptorSetLayoutBinding Adren::Descriptor::uboLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, uint32_t descriptorCount) {
+    return VkDescriptorSetLayoutBinding {
+        .binding = binding,
+        .descriptorType = type,
+        .descriptorCount = descriptorCount,
+        .stageFlags = stageFlags,
+        .pImmutableSamplers = nullptr
+    };
+}
 
-    VkDescriptorSetLayoutBinding dynamicUboBinding = Adren::Info::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1);
+VkDescriptorSetLayoutBinding Adren::Descriptor::samplerLayoutBinding() {
+    return VkDescriptorSetLayoutBinding {
+        .binding = 2,
+        .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .pImmutableSamplers = 0
+    };
+}
 
-    VkDescriptorSetLayoutBinding samplerBinding = Adren::Info::samplerLayoutBinding();
+VkDescriptorSetLayoutBinding Adren::Descriptor::textureLayoutBinding(uint32_t count) {
+    return VkDescriptorSetLayoutBinding {
+        .binding = 3,
+        .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        .descriptorCount = count,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .pImmutableSamplers = 0
+    };
+}
 
-    VkDescriptorSetLayoutBinding textureBinding = Adren::Info::textureLayoutBinding(2048);
+void Adren::Descriptor::createLayout() {
+    VkDescriptorSetLayoutBinding uboBinding = Adren::Descriptor::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
+
+    VkDescriptorSetLayoutBinding dynamicUboBinding = Adren::Descriptor::uboLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1);
+
+    VkDescriptorSetLayoutBinding samplerBinding = Adren::Descriptor::samplerLayoutBinding();
+
+    VkDescriptorSetLayoutBinding textureBinding = Adren::Descriptor::textureLayoutBinding(2048);
 
     std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboBinding, dynamicUboBinding, samplerBinding, textureBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -95,11 +125,40 @@ void Adren::Descriptor::createSets(std::vector<Model::Texture>& textures, std::v
     allocInfo.pNext = &setCounts;
 
     sets.resize(setCount);
-    Adren::Debugger::vibeCheck("ALLOCATED DESCRIPTOR SETS", vkAllocateDescriptorSets(device, &allocInfo, sets.data()));
+    
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::vibeCheck(
+            "ALLOCATED DESCRIPTOR SETS", 
+            vkAllocateDescriptorSets(device, &allocInfo, sets.data())
+        );
+    #else
+        vkAllocateDescriptorSets(device, &allocInfo, sets.data());
+    #endif
 
-    VkSamplerCreateInfo sampInfo = Adren::Info::samplerInfo();
-    Adren::Debugger::vibeCheck("CREATE SAMPLER", vkCreateSampler(device, &sampInfo, nullptr, &sampler));
+    VkSamplerCreateInfo sampInfo = VkSamplerCreateInfo {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = VK_FILTER_LINEAR,
+        .minFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .anisotropyEnable = VK_TRUE,
+        .maxAnisotropy = 16.0f,
+        .compareEnable = VK_FALSE,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
 
+    #ifdef ADREN_DEBUG
+        Adren::Debugger::vibeCheck(
+            "CREATE SAMPLER", 
+            vkCreateSampler(device, &sampInfo, nullptr, &sampler));
+    #else
+        vkCreateSampler(device, &sampInfo, nullptr, &sampler);
+    #endif
+    
     VkDescriptorImageInfo samplerInfo{};
     samplerInfo.sampler = sampler;
     std::vector<VkDescriptorImageInfo> imageInfo;

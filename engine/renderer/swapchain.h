@@ -7,16 +7,15 @@
 
 #pragma once
 #include <vector>
-#include "tools.h"
 //#include "devices.h"
-#include "images.h"
+#include "devices.h"
 
 namespace Adren {
 class Devices;
 
 class Swapchain {
 public:
-    Swapchain(Devices* devices) : device(devices->getDevice()), gpu(devices->getGPU()) {}
+    Swapchain(Devices* devices) : devices(devices) {}
 
     void cleanup() {
         for (VkFramebuffer& framebuffer : framebuffers) {
@@ -43,8 +42,8 @@ public:
     VkFormat imgFormat;
     uint32_t imageCount;
 private:
-    VkDevice& device;
-    VkPhysicalDevice& gpu;
+    Devices* devices;
+    VkDevice& device = devices->getDevice();
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

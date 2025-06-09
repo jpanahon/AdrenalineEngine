@@ -1,15 +1,31 @@
 #include "renderpass.h"
-#include "tools.h"
-#include "info.h"
-
 #ifdef ADREN_DEBUG
 #include "debugger.h"
 #endif
 
 void Adren::Renderpass::create(Image& depth, VkFormat& imageFormat, VkInstance& instance) {
-    VkAttachmentDescription colorAttachment = Adren::Info::colorAttachment(imageFormat);
-    VkAttachmentDescription depthAttachment = Adren::Info::depthAttachment(depth.format);
-
+    VkAttachmentDescription colorAttachment = VkAttachmentDescription {
+            .format = imageFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+    
+    VkAttachmentDescription depthAttachment = VkAttachmentDescription {
+        .format = depth.format,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+    
     VkAttachmentReference colorReference{};
     colorReference.attachment = 0;
     colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

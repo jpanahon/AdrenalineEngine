@@ -6,33 +6,22 @@
 */
 
 #pragma once
-#include "types.h"
 #include "devices.h"
-#include "model.h"
-#include "tools.h"
 
 namespace Adren {
-class Buffers {
+class Buffer {
 public:
-	Buffers(VkInstance& instance, Devices* devices) : device(devices->getDevice()), allocator(devices->getAllocator()),
-		gpu(devices->getGPU()), graphicsQueue(devices->getGraphicsQ()), instance(instance) {}
-
-	void createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool);
-	void createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models);
-	void updateDynamicUniformBuffer(std::vector<Model*>& models);
-	void createBuffer(VmaAllocator& allocator, VkDeviceSize& size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer& buffer, VmaMemoryUsage vmaUsage);
+	Buffer(Devices* devices, VkDeviceSize& size, VkDeviceSize align = 0) : devices(devices) {}
+	void create(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	void cleanup();
 
-	Buffer vertex;
-	Buffer index;
-	Buffer dynamicUniform;
-	UboData uboData;
+	VkBuffer buffer;
+    VmaAllocation memory;
+    VkDeviceSize size = 0;
+    VkDeviceSize align = 0;
+    void* mapped;
+	void copyTo(VkBuffer dstBuffer, VkCommandPool& commandPool);
 private:
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool& commandPool);
-	VmaAllocator& allocator;
-	VkDevice& device;
-	VkPhysicalDevice& gpu;
-	VkQueue& graphicsQueue;
-	VkInstance& instance;
+	Devices* devices;
 };
 }

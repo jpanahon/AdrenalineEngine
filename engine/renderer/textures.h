@@ -6,7 +6,7 @@
 */
 
 #pragma once
-#GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_VULKAN
 #include <glfw/glfw3.h>
 
 class Texture {

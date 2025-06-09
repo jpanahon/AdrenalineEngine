@@ -9,18 +9,15 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <vector>
 #include "types.h"
 #include "swapchain.h"
-#include "pipeline.h"
-#include "renderpass.h"
 #include "camera.h"
 
 namespace Adren {
 class GUI {
 public:
-    GUI(Devices* devices, Buffers& buffers, Images& images, Swapchain& swapchain, VkInstance& instance) : buffers(buffers), images(images), swapchain(swapchain), 
-        instance(instance), device(devices->getDevice()), graphicsQueue(devices->getGraphicsQ()), gpu(devices->getGPU()), allocator(devices->getAllocator()) {}
+    GUI(Devices* devices, Images& images, Swapchain& swapchain, VkInstance& instance) : devices(devices), images(images), 
+        swapchain(swapchain), instance(instance) {}
 
     void init(Camera& camera, GLFWwindow* window, VkSurfaceKHR& surface);
     void cleanup();
@@ -54,11 +51,9 @@ private:
     Images& images;
 
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-    VkDevice& device;
+    
+    Devices::QueueFamilyIndices queueFam;
+    Devices* devices;
     VkInstance& instance;
-    VkQueue& graphicsQueue;
-    QueueFamilyIndices queueFam;
-    VkPhysicalDevice& gpu;
-    VmaAllocator& allocator;
 };
 }

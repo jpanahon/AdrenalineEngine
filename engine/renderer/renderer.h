@@ -6,10 +6,8 @@
 */
 
 #pragma once
-#include <iostream>
 #include <vector>
-#include <unordered_map>
-#include <string>
+#include <memory>
 
 #include "model.h"
 #include "camera.h"
@@ -19,7 +17,6 @@
 #endif
 
 #include "gui.h"
-#include "descriptor.h"
 
 namespace Adren {
 class Renderer {
@@ -31,16 +28,43 @@ public:
     void wait() { vkDeviceWaitIdle(devices->getDevice()); }
     void addModel(char* path);
     void processInput(GLFWwindow* window, Camera& camera);
+    void initVulkan(GLFWwindow* window, Camera& camera);
+private:
+    struct Frame {
+        VkCommandPool commandPool;
+        VkCommandBuffer commandBuffer;
+        VkFence fence;
+        VkSemaphore iSemaphore;
+        VkSemaphore rSemaphore;
+    };
+
+    struct Offset {
+        int32_t index = 0;
+        uint32_t vertex = 0;
+        uint32_t texture = 0;
+        uint32_t dynamic = 0;
+        uint32_t model = 0;
+        VkDeviceSize align = 0;
+    };
+
+    struct Buffers {
+        Buffer vertex;
+        Buffer index;
+        Buffer dynamicUniform;
+    } buffers;
+    
     Model* cubes = new Model("../engine/resources/models/deccer/cubes.gltf");
     std::vector<Model*> models = { cubes };
 
-    Devices* devices = new Devices{instance, surface};
+    std::unique_ptr<Devices> devices(new Devices{instance, surface});
     GUI gui{devices, buffers, images, swapchain, instance};
 
+    VkApplicationInfo appInfo();
+    
     void createInstance();
-    void initVulkan(GLFWwindow* window, Camera& camera);
     void createCommands();
     void createSyncObjects();
+
     std::vector<Model::Texture> textures;
 
     static const int maxFramesInFlight = 3;
@@ -56,39 +80,41 @@ public:
     
 #ifdef ADREN_DEBUG
     // This sets up Vulkan validation layers.
-
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
     void fillDebugInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
     VkResult createDebugUtils(
-        VkInstance instance, 
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
-        const VkAllocationCallbacks* pAllocator, 
+        VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
         VkDebugUtilsMessengerEXT* pDebugMessenger
     );
 
     void destroyDebugUtils(
-        VkInstance instance, 
-        VkDebugUtilsMessengerEXT debugMessenger, 
+        VkInstance instance,
+        VkDebugUtilsMessengerEXT debugMessenger,
         const VkAllocationCallbacks* pAllocator
     );
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-        VkDebugUtilsMessageTypeFlagsEXT messageType, 
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData
     );
 
     void setupDebugger();
 #endif
 
-    Buffers buffers{instance, devices};
+    void createBuffers();
+    void createImages();
+    void loadTextures();
+    
     Swapchain swapchain{devices};
-    Images images{devices, buffers};
-    Renderpass renderpass{devices};
-    Descriptor descriptor{devices, buffers};
-    Pipeline pipeline{devices};
+    Images images{devices};
+    // Renderpass renderpass{devices};
+    // Descriptor descriptor{devices, buffers};
+    // Pipeline pipeline{devices};
 };
 }

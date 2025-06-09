@@ -11,7 +11,7 @@
 #include "debugger.h"
 #endif
 
-void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool) {
+void Adren::Buffer::createModelBuffers(std::vector<Model*>& models, VkCommandPool& commandPool) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -60,17 +60,17 @@ void Adren::Buffers::createModelBuffers(std::vector<Model*>& models, VkCommandPo
 #endif
 }
 
-void Adren::Buffers::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool& commandPool) {
-    VkCommandBuffer commandBuffer = Adren::Tools::beginSingleTimeCommands(device, commandPool);
+void Adren::Buffer::copyTo(Buffer dstBuffer, VkCommandPool& commandPool) {
+    VkCommandBuffer commandBuffer = devices->beginSingleTimeCommands(commandPool);
 
     VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    copyRegion.size = dstBuffer.size;
+    vkCmdCopyBuffer(commandBuffer, buffer, dstBuffer.buffer, 1, &copyRegion);
 
-    Adren::Tools::endSingleTimeCommands(commandBuffer, device, graphicsQueue, commandPool);
+    devices->endSingleTimeCommands(commandBuffer, commandPool);
 }
 
-void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer& buffer, VmaMemoryUsage vmaUsage) {
+void Adren::Buffer::create(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -78,17 +78,17 @@ void Adren::Buffers::createBuffer(VmaAllocator& allocator, VkDeviceSize& size, V
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo vmaAllocInfo{};
-    vmaAllocInfo.usage = vmaUsage;
+    vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
     vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     vmaAllocInfo.preferredFlags = properties;
 
-    vmaCreateBuffer(allocator, &bufferInfo, &vmaAllocInfo, &buffer.buffer, &buffer.memory, nullptr);
+    vmaCreateBuffer(devices->getAllocator(), &bufferInfo, &vmaAllocInfo, &buffer, &memory, nullptr);
 }
 
-void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models) {
+void Adren::Buffer::createUniformBuffers(std::vector<VkImage>& images, std::vector<Model*>& models) {
     // Get the GPU's properties to find the minimum alignment value.
     VkPhysicalDeviceProperties gpuProperties{};
-    vkGetPhysicalDeviceProperties(gpu, &gpuProperties);
+    vkGetPhysicalDeviceProperties(devices->getGPU(), &gpuProperties);
 
     VkDeviceSize minUboAlignment = gpuProperties.limits.minUniformBufferOffsetAlignment;
     dynamicUniform.align = sizeof(glm::mat4);
@@ -109,14 +109,16 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
 #endif
 
     dynamicUniform.size = modelSize * dynamicUniform.align;
-    uboData.model = (glm::mat4*)Adren::Tools::alignedAlloc(dynamicUniform.size, dynamicUniform.align);
+    uboData.model = (glm::mat4*)devices->alignedAlloc(dynamicUniform.size, dynamicUniform.align);
     assert(uboData.model);
 
 #ifdef ADREN_DEBUG
     std::cout << "minUniformBufferOffsetAlignment = " << minUboAlignment << std::endl;
     std::cout << "dynamicAlignment = " << dynamicUniform.align << std::endl;
 #endif
-    createBuffer(allocator, dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform, VMA_MEMORY_USAGE_AUTO);
+
+    createBuffer(allocator, dynamicUniform.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, dynamicUniform, VMA_MEMORY_USAGE_AUTO);
     vmaMapMemory(allocator, dynamicUniform.memory, &dynamicUniform.mapped);
     memcpy(dynamicUniform.mapped, uboData.model, dynamicUniform.size);
 
@@ -125,7 +127,7 @@ void Adren::Buffers::createUniformBuffers(std::vector<VkImage>& images, std::vec
 #endif
 }
 
-void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
+void Adren::Buffer::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     std::vector<glm::mat4> matrices;
 
     for (Model* model : models) {
@@ -142,7 +144,7 @@ void Adren::Buffers::updateDynamicUniformBuffer(std::vector<Model*>& models) {
     vmaFlushAllocation(allocator, dynamicUniform.memory, alignment, sizeof(glm::mat4));
 }
 
-void Adren::Buffers::cleanup() {
+void Adren::Buffer::cleanup() {
     if (uboData.model) Adren::Tools::alignedFree(uboData.model); 
 
     vmaDestroyBuffer(allocator, vertex.buffer, vertex.memory);

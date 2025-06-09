@@ -66,6 +66,7 @@ public:
       
     // Taken from fastgltf's gl_viewer example.
     glm::mat4 getTransformMatrix(const fastgltf::Node& node, glm::mat4x4& base);
+    
     std::vector<Texture> getTextures();
 private:
     bool loadImages(fastgltf::Image& image);
